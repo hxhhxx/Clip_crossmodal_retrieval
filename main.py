@@ -15,15 +15,15 @@ def split_dataset(args, preprocess, target_transform):
         #print(len(flickr_Dataset))
         #31783
         train_size, val_size, test_size = dataset_len-2000, 1000, 1000
-    # elif args.dataset == "coco":
+
+        train_dataset, val_dataset, test_dataset = random_split(Dataset, [train_size, val_size, test_size])
+    elif args.dataset == "coco":
         # 加载COCO数据集
-        Dataset = COCOcaption(root='/kaggle/working/val2017',ann_dict=img2anno, transform = preprocess, target_transform = target_transform)
-        dataset_len = len(Dataset)
-        train_size, val_size, test_size = dataset_len-500, 250, 250
+        val_dataset = COCOcaption(args.val_root, args.val_ann, transform = preprocess, target_transform = target_transform)
+        #train_dataset = COCOcaption(args.train_root, args.train_ann, transform = preprocess, target_transform = target_transform)
+        #test_dataset = COCOcaption(args.test_root, args.test_ann, transform = preprocess, target_transform = target_transform)
 
-    train_dataset, val_dataset, test_dataset = random_split(Dataset, [train_size, val_size, test_size])
-
-    return train_dataset, val_dataset, test_dataset
+    return  val_dataset #,train_dataset, test_dataset
 
 def main(args):
     

@@ -1,14 +1,9 @@
-from datasets.Flickr30k import Flickr30k
-import encode
-
 import torch
-import torch.utils.data as dutils
+import numpy as np
 from typing import List
-import clip
-
 
 # Encodes all text and images in a dataset
-def encode_dataset(clip,  dataset_Loader, batch_size = 16):
+def encode_dataset(clip,  eva_Loader, batch_size = 16):
     with torch.no_grad():
         #  gives the corresponding text indices for the ith image and text
         #  (as there are multiple pieces of text for each image)
@@ -22,7 +17,7 @@ def encode_dataset(clip,  dataset_Loader, batch_size = 16):
         text_index = 0
         image_index = 0
 
-        for images, text, image_id in dataset_Loader:
+        for images, text, image_id in eva_Loader:
             images = images.to(device)
             text = text.to(device)
 
@@ -60,9 +55,9 @@ def encode_dataset(clip,  dataset_Loader, batch_size = 16):
         return image_encodings, text_encodings, text_to_image_map, image_to_text_map
 
 
-def evaluation(clip, dataset_Loader, k_vals: List[int], batch_size: int):
+def metrics_at_k(clip, eva_Loader, k_vals: List[int], batch_size: int):
     print("Encoding all data...")
-    image_encodings, text_encodings, text_to_image_map, image_to_text_map = encode_dataset(clip, dataset_Loader, batch_size=batch_size)
+    image_encodings, text_encodings, text_to_image_map, image_to_text_map = encode_dataset(clip, eva_Loader, batch_size=batch_size)
  
     num_text = text_encodings.shape[0]
     num_im = image_encodings.shape[0]
@@ -171,7 +166,7 @@ def evaluation(clip, dataset_Loader, k_vals: List[int], batch_size: int):
                     sum_precisions += precision_at_i
                     num_precisions += 1
 
-            average_precision = sum_precisions / num_precisions if num_precisions else 0
+            average_precision = sum_precisions / 5 #num_precisions if num_precisions else 0
             #or 5?? but if it's 5 mAP1 will be very small
             AP.append(average_precision)
 
@@ -179,3 +174,7 @@ def evaluation(clip, dataset_Loader, k_vals: List[int], batch_size: int):
 
     print("Done.")
     return text_to_image_recall, image_to_text_recall, mAP_t2i, mAP_i2t
+
+
+
+

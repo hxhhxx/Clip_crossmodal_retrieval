@@ -19,7 +19,7 @@ def split_dataset(args, preprocess, target_transform):
         train_dataset, val_dataset, test_dataset = random_split(Dataset, [train_size, val_size, test_size])
     elif args.dataset == "coco":
         # 加载COCO数据集
-        val_dataset = COCOcaption(args.val_root, args.val_ann, transform = preprocess, target_transform = target_transform)
+        val_dataset = COCOcaption(root = args.val_root, ann_file = args.val_ann, transform = preprocess, target_transform = target_transform)
         #train_dataset = COCOcaption(args.train_root, args.train_ann, transform = preprocess, target_transform = target_transform)
         #test_dataset = COCOcaption(args.test_root, args.test_ann, transform = preprocess, target_transform = target_transform)
 
@@ -37,7 +37,7 @@ def main(args):
         model, preprocess = clip.load("ViT-B/32", device=device)
         target_transform = lambda texts: clip.tokenize(texts[:5])
 
-        _, _, eva_dataset = split_dataset(args,preprocess,target_transform)
+        eva_dataset = split_dataset(args,preprocess,target_transform)
         eva_Loader = DataLoader(dataset=eva_dataset, batch_size=16, shuffle=False)
         recall_t2i, recall_i2t, mAP_t2i, mAP_i2t = Evaluation.metrics_at_k(model, eva_Loader, k_vals= k_vals, batch_size=16)
 

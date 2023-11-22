@@ -25,6 +25,11 @@ def split_dataset(args):
     return train_dataset, val_dataset, test_dataset
 
 def main(args):
+    
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    model, preprocess = clip.load("ViT-B/32", device=device)
+    target_transform = lambda texts: clip.tokenize(texts[:5])
 
     k_vals = [1,5,10]
 
@@ -55,8 +60,6 @@ def main(args):
 
 if __name__ == '__main__':
     args = parser.parse_arguments() #read the parameters from parser
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model, preprocess = clip.load("ViT-B/32", device=device)
-    target_transform = lambda texts: clip.tokenize(texts[:5])
+
 
     main(args)

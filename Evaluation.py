@@ -2,8 +2,11 @@ import torch
 import numpy as np
 from typing import List
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
 # Encodes all text and images in a dataset
 def encode_dataset(clip,  eva_Loader, batch_size = 16):
+
     with torch.no_grad():
         #  gives the corresponding text indices for the ith image and text
         #  (as there are multiple pieces of text for each image)

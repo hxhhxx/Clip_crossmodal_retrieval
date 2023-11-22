@@ -2,7 +2,7 @@ import torch
 import clip
 from torch.utils.data import random_split
 from Datasets.Flickr30k import Flickr30k
-from Datasets.Flickr30k import MOSCOCO
+from Datasets.MOSCOCO import MOSCOCO
 from torch.utils.data import DataLoader
 import Evaluation
 import parser

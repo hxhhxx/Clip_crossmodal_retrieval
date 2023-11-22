@@ -1,9 +1,8 @@
-import numpy as np
 import os
 import string
-import clip
-import torch
 from PIL import Image
+from torch.utils.data import Dataset
+from collections import defaultdict
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 class Flickr30k(Dataset):

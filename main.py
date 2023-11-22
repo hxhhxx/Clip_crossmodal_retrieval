@@ -2,7 +2,7 @@ import torch
 import clip
 from torch.utils.data import random_split
 from Datasets.Flickr30k import Flickr30k
-#from Datasets.MOSCOCO import MOSCOCO
+from Datasets.MSCOCO import COCOcaption
 from torch.utils.data import DataLoader
 import Evaluation
 import parser
@@ -16,9 +16,10 @@ def split_dataset(args, preprocess, target_transform):
         #31783
         train_size, val_size, test_size = dataset_len-2000, 1000, 1000
     # elif args.dataset == "coco":
-    #     # 加载COCO数据集
-    #     Dataset = 
-    #     train_size, val_size, test_size = 4500, 250, 250
+        # 加载COCO数据集
+        Dataset = COCOcaption(root='/kaggle/working/val2017',ann_dict=img2anno, transform = preprocess, target_transform = target_transform)
+        dataset_len = len(Dataset)
+        train_size, val_size, test_size = dataset_len-500, 250, 250
 
     train_dataset, val_dataset, test_dataset = random_split(Dataset, [train_size, val_size, test_size])
 

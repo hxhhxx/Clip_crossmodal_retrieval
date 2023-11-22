@@ -20,7 +20,7 @@ def encode_dataset(clip,  eva_Loader, batch_size = 16):
         text_index = 0
         image_index = 0
 
-        for images, text, image_id in eva_Loader:
+        for images, text in eva_Loader:
             images = images.to(device)
             text = text.to(device)
 

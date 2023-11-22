@@ -35,7 +35,7 @@ class Flickr30k(Dataset):
         with open(self.ann_file) as fh:
             next(fh)
             for line in fh:
-                img_id, num, captions = line.strip().split("|")
+                img_id, _, captions = line.strip().split("|")
                 self.annotations[img_id].append(captions)
 
         self.ids = list(sorted(self.annotations.keys()))
@@ -66,7 +66,7 @@ class Flickr30k(Dataset):
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return img, target, img_id
+        return img, target
 
 
     def __len__(self) -> int:

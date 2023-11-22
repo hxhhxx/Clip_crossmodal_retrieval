@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 import Evaluation
 import parser
 
-def split_dataset(args):
+def split_dataset(args, preprocess, target_transform):
     if args.dataset == "flickr":
         # 加载Flickr数据集
         Dataset= Flickr30k(root='/kaggle/input/flickr30k/images',ann_file="/kaggle/input/flickr30k/captions.txt", transform = preprocess, target_transform =  target_transform )
@@ -28,16 +28,15 @@ def main(args):
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    model, preprocess = clip.load("ViT-B/32", device=device)
-    target_transform = lambda texts: clip.tokenize(texts[:5])
-
     k_vals = [1,5,10]
 
     if args.evaluate:
-
         print("Start evaluating", flush=True)
-        
-        _, _, eva_dataset = split_dataset(args)
+
+        model, preprocess = clip.load("ViT-B/32", device=device)
+        target_transform = lambda texts: clip.tokenize(texts[:5])
+
+        _, _, eva_dataset = split_dataset(args,preprocess,target_transform)
         eva_Loader = DataLoader(dataset=eva_dataset, batch_size=16, shuffle=False)
         recall_t2i, recall_i2t, mAP_t2i, mAP_i2t = Evaluation.metrics_at_k(model, eva_Loader, k_vals= k_vals, batch_size=16)
 

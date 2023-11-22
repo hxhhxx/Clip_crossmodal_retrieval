@@ -169,7 +169,7 @@ def metrics_at_k(clip, eva_Loader, k_vals: List[int], batch_size: int):
                     sum_precisions += precision_at_i
                     num_precisions += 1
 
-            average_precision = sum_precisions / 5 #num_precisions if num_precisions else 0
+            average_precision = sum_precisions / num_precisions if num_precisions else 0
             #or 5?? but if it's 5 mAP1 will be very small
             AP.append(average_precision)
 

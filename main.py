@@ -11,7 +11,10 @@ def split_dataset(args):
     if args.dataset == "flickr":
         # 加载Flickr数据集
         Dataset= Flickr30k(root='/kaggle/input/flickr30k/images',ann_file="/kaggle/input/flickr30k/captions.txt", transform = preprocess, target_transform =  target_transform )
-        train_size, val_size, test_size = 28000, 1000, 1000
+        dataset_len = len(Dataset)
+        #print(len(flickr_Dataset))
+        #31783
+        train_size, val_size, test_size = dataset_len-2000, 1000, 1000
     # elif args.dataset == "coco":
     #     # 加载COCO数据集
     #     Dataset = 

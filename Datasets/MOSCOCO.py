@@ -43,7 +43,7 @@ class COCOcaption(Dataset):
         target = self.ann_file[img_id]
         if self.target_transform is not None:
             target = self.target_transform.tokenize(target)
-        return target, img, img_id
+        return imgs, text
 
 
     def __len__(self):

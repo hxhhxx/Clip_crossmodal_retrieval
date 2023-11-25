@@ -9,7 +9,9 @@ Flickr30k: contains 31,000 images together with 5 reference sentences provided b
 
 data  
 ├── coco2017
+
 │   ├── annotations  
+
 │   │   ├── train2017_caption.json 
 │   │   ├── val2017_caption.json 
 
@@ -19,7 +21,9 @@ data
 │   │   ├── ####.jpg  
 
 ├── Flickr30k (split in to train,validation)
+
 │   ├── annotations  
 │   │   ├── ###.txt    
+
 │   ├── images  
 │   │   ├── ###.jpg 

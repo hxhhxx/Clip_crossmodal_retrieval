@@ -12,10 +12,12 @@ data
 │   ├── annotations  
 │   │   ├── train2017_caption.json 
 │   │   ├── val2017_caption.json 
+
 │   ├── train2017  
 │   │   ├── ####.jpg  
 │   ├── val2017  
 │   │   ├── ####.jpg  
+
 ├── Flickr30k (split in to train,validation)
 │   ├── annotations  
 │   │   ├── ###.txt    

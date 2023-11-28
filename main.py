@@ -27,8 +27,6 @@ def split_dataset(args, preprocess, target_transform):
 
 def main(args):
     
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-
     k_vals = [1,5,10]
 
     if args.evaluate:
@@ -60,6 +58,7 @@ def main(args):
 if __name__ == '__main__':
     args = parser.parse_arguments() #read the parameters from parser
     
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     model, preprocess = clip.load(args.model, device=device)
 
     main(args)

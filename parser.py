@@ -2,6 +2,9 @@ import argparse
 
 def parse_arguments():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    #action
+    parser.add_argument('--evaluate', action='store_true')
+    
     # datasets parameters
     parser.add_argument("--dataset", default="flickr", choices=["flickr", "coco"], help="Choose the dataset to process (flickr/coco)")
     

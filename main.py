@@ -34,7 +34,6 @@ def main(args):
     if args.evaluate:
         print("Start evaluating", flush=True)
 
-        model, preprocess = clip.load("ViT-B/32", device=device)
         target_transform = lambda texts: clip.tokenize(texts[:5])
 
         eva_dataset = split_dataset(args,preprocess,target_transform)
@@ -60,6 +59,7 @@ def main(args):
 
 if __name__ == '__main__':
     args = parser.parse_arguments() #read the parameters from parser
-
+    
+    model, preprocess = clip.load(args.model, device=device)
 
     main(args)

@@ -12,7 +12,9 @@ def parse_arguments():
     parser.add_argument("--test_ann", default="/kaggle/input/flickr30k/captions.txt", help="Annotation file of the dataset")
     parser.add_argument("--val_root", default='/kaggle/input/flickr30k/Images', help="Root directory of the dataset")
     parser.add_argument("--val_ann", default="/kaggle/input/flickr30k/captions.txt", help="Annotation file of the dataset")
-    parser.add_argument('--evaluate', action='store_true')
+    
+    #diff resnet/vit model for covert weight
+    parser.add_argument('--model', default="ViT-B/32",help="Choose the model of convert")
     
     args = parser.parse_args()
     return args

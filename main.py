@@ -70,7 +70,7 @@ def main(args):
     for param in model.parameters():
         param.requires_grad = False
     
-    for param in model.vision.proj.parameters():
+    for param in model.visual.proj.parameters():
         param.requires_grad = True
 
     for param in model.text_projection.parameters():
@@ -78,7 +78,7 @@ def main(args):
 
     optimizer = optim.Adam([
         {'params': model.text_projection.parameters()},
-        {'params': model.vision.proj.parameters()}
+        {'params': model.visual.proj.parameters()}
     ], lr=args.lr)
 
     loss = nn.CrossEntropyLoss()

@@ -5,7 +5,7 @@ def parse_arguments():
     #action
     parser.add_argument('--evaluate', action='store_true')
     parser.add_argument('--num_epoch', default="20",help="num of epoch") 
-    parser.add_argument('--lr', default="1e-4",help="Optrimizer learning rate") 
+    parser.add_argument('--lr',type=float, default="1e-4",help="Optrimizer learning rate") 
 
     #diff resnet/vit model for covert weight
     parser.add_argument('--model', default="ViT-B/32",help="Choose the model of convert") 

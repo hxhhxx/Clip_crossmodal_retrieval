@@ -93,7 +93,7 @@ def main(args):
 
             #print(texts.shape) #16*5*77 input text
             # B x 5 x 77 -> (B*5) x 77 in evaluation
-            texts = torch.flatten(text, start_dim=0, end_dim=1)
+            texts = torch.flatten(texts, start_dim=0, end_dim=1)
 
             images = images.to(device)
             texts = texts.to(device)

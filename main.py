@@ -1,4 +1,5 @@
 from cgitb import text
+from unittest import TextTestResult
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -84,8 +85,10 @@ def main(args):
     loss = nn.CrossEntropyLoss()
 
     for epoch in range(args.num_epoch):
-        #model.train()
+        model.train()
         for images, texts in tqdm(train_Loader):
+            # B x 5 x 77 -> (B*5) x 77
+            texts = torch.flatten(texts, start_dim=0, end_dim=1)
 
             images = images.to(device)
             texts = texts.to(device)

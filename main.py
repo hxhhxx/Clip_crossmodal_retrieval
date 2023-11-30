@@ -94,37 +94,34 @@ def main(args):
 
             #print(texts.shape) #16*5*77 input text
             # B x 5 x 77 -> 80 x 77 in evaluation
-            # image:16*image -> 80*image
+            # image:16*image -> 80*image(3*224*224)
 
             images = images.repeat_interleave(5, 0)  # Repeat each image 5 times
-            print(images.shape)
             texts = torch.flatten(texts, start_dim=0, end_dim=1)
-            print(texts.shape)
-            
+
             images = images.to(device)
             texts = texts.to(device)
             
-            #image_encodings, text_encodings = model(images, texts)
-            image_encodings = model.encode_image(images)
-            text_encodings = model.encode_text(texts)
+            # #image_encodings, text_encodings = model(images, texts)
+            # image_encodings = model.encode_image(images)
+            # text_encodings = model.encode_text(texts)
 
-            # Normalise 
-            image_encodings = image_encodings / image_encodings.norm(dim=-1, keepdim=True)
-            text_encodings = text_encodings / text_encodings.norm(dim=-1, keepdim=True)
+            # # Normalise 
+            # image_encodings = image_encodings / image_encodings.norm(dim=-1, keepdim=True)
+            # text_encodings = text_encodings / text_encodings.norm(dim=-1, keepdim=True)
 
-            logits_per_image = image_encodings @ text_encodings.T
-            logits_per_text = text_encodings @ image_encodings.T
+            # logits_per_image = image_encodings @ text_encodings.T
+            # logits_per_text = text_encodings @ image_encodings.T
 
             #same as 
-            #logits_per_image, logits_per_text = model(images, texts)
+            logits_per_image, logits_per_text = model(images, texts)
 
-            labels_img = torch.arange(len(logits_per_image)).to(logits_per_image.device)
-            labels_text = torch.arange(len(logits_per_text)).to(logits_per_text.device)
+            ground_truth = torch.arange(len(images),dtype=torch.long,device=device)
 
-            image_loss = loss(logits_per_image, labels_img)
-            text_loss  = loss(logits_per_text, labels_text)
+            image_loss = loss(logits_per_image, ground_truth)
+            text_loss  = loss(logits_per_text, ground_truth)
 
-            total_loss = (image_loss + text_loss) / (2*5)
+            total_loss = (image_loss + text_loss) / 2
             total_loss.backward()
 
             if device == "cpu":

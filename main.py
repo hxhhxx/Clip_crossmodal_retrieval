@@ -87,8 +87,9 @@ def main(args):
     for epoch in range(args.num_epoch):
         model.train()
         for images, texts in tqdm(train_Loader):
-            # B x 5 x 77 -> (B*5) x 77
-            texts = torch.flatten(texts, start_dim=0, end_dim=1)
+            # # B x 5 x 77 -> (B*5) x 77 in the evaluation
+            
+            texts = torch.flatten(texts, start_dim=-2, end_dim=-1)
 
             images = images.to(device)
             texts = texts.to(device)

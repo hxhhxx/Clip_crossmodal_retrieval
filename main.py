@@ -70,21 +70,15 @@ def main(args):
     train_Loader = DataLoader(dataset=train_dataset, batch_size=16, shuffle=False)
     val_loader = DataLoader(dataset=val_dataset, batch_size=16, shuffle=False)
 
-    # for param in model.parameters():
-    #     param.requires_grad = False
+    for param in model.parameters():
+        param.requires_grad = False
     
-    # for param in model.visual.proj:
-    #     param.requires_grad = True
+    model.text_projection.requires_grad = True
+    model.visual.proj.requires_grad = True
 
-    # for param in model.text_projection:
-    #     param.requires_grad = True
+    trainable_params = [p for p in model.parameters() if p.requires_grad]
 
-    # optimizer = optim.Adam([
-    #     {'params': model.text_projection},
-    #     {'params': model.visual.proj}
-    # ], lr=args.lr)
-
-    optimizer = optim.Adam(model.parameters(), lr=5e-5,betas=(0.9,0.98),eps=1e-6,weight_decay=0.2)
+    optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98),eps=1e-6,weight_decay=0.2)
 
     loss = nn.CrossEntropyLoss()
      

@@ -40,6 +40,8 @@ def convert_models_to_fp32(model):
 def main(args):
     
     k_vals = [1,5,10]
+    model, preprocess = clip.load(args.model, device=device)
+    target_transform = lambda texts: clip.tokenize(texts[:5])
 
     if args.evaluate:
         print("Start evaluating", flush=True)
@@ -145,9 +147,6 @@ if __name__ == '__main__':
     args = parser.parse_arguments() #read the parameters from parser
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = clip.load(args.model, device=device)
-    model, preprocess = clip.load(args.model, device=device)
-    target_transform = lambda texts: clip.tokenize(texts[:5])
 
 
     main(args)

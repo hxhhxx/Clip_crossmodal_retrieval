@@ -66,8 +66,7 @@ def main(args):
         for k, x in zip(k_vals, mAP_i2t):
             print(f" mAP@{k}: {100*x:.2f}%")
 
-    train_dataset, _,_ = split_dataset(args, preprocess= None, target_transform= None)
-    _,val_dataset,_ = split_dataset(args,preprocess,target_transform)
+    train_dataset, val_dataset,_ = split_dataset(args,preprocess,target_transform)
     train_Loader = DataLoader(dataset=train_dataset, batch_size=16, shuffle=False)
     val_loader = DataLoader(dataset=val_dataset, batch_size=16, shuffle=False)
 

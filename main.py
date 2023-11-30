@@ -86,7 +86,7 @@ def main(args):
     def convert_models_to_fp32(model): 
         for p in model.parameters(): 
             p.data = p.data.float() 
-            p.grad.data = p.grad.data.float() 
+            p.requires_grad.data = p.requires_grad.data.float() 
 
     for epoch in range(args.num_epoch):
         model.train()

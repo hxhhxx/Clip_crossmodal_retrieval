@@ -98,14 +98,17 @@ def main(args):
             images = images.to(device)
             texts = texts.to(device)
             
-            image_features, text_features = model(images, texts)
+            image_encodings, text_encodings = model(images, texts)
 
-            # normalized features
-            image_features = image_features / image_features.norm(dim=-1, keepdim=True)
-            text_features = text_features / text_features.norm(dim=-1, keepdim=True)
+            # Normalise 
+            image_encodings = image_encodings / image_encodings.norm(dim=-1, keepdim=True)
+            text_encodings = text_encodings / text_encodings.norm(dim=-1, keepdim=True)
 
-            logits_per_image = image_features @ text_features.t()
-            logits_per_text = text_features @ image_features.t()
+            image_encodings = torch.cat(image_encodings)
+            text_encodings = torch.cat(text_encodings)
+
+            logits_per_image = image_encodings @ text_encodings.T
+            logits_per_text = text_encodings @ image_encodings.T
 
             labels = torch.arange(len(logits_per_image)).to(logits_per_image.device)
 

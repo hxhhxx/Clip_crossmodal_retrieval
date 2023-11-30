@@ -126,7 +126,7 @@ def main(args):
             else : 
                 convert_models_to_fp32(model)
                 optimizer.step()
-                model.convert_weights(model)
+                clip.model.convert_weights(model)
 
         recall_t2i, recall_i2t, mAP_t2i, mAP_i2t = Evaluation.metrics_at_k(model, val_loader, k_vals= k_vals, batch_size=16)
 

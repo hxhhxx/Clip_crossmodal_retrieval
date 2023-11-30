@@ -101,19 +101,22 @@ def main(args):
             #image_encodings, text_encodings = model(images, texts)
             image_encodings = model.encode_image(images)
             text_encodings = model.encode_text(texts)
-            
+
             # Normalise 
             image_encodings = image_encodings / image_encodings.norm(dim=-1, keepdim=True)
             text_encodings = text_encodings / text_encodings.norm(dim=-1, keepdim=True)
 
-
             logits_per_image = image_encodings @ text_encodings.T
             logits_per_text = text_encodings @ image_encodings.T
 
-            labels = torch.arange(len(logits_per_image)).to(logits_per_image.device)
+            #same as 
+            #logits_per_image, logits_per_text = model(images, texts)
 
-            image_loss = loss(logits_per_image, labels)
-            text_loss  = loss(logits_per_text, labels)
+            labels_img = torch.arange(len(logits_per_image)).to(logits_per_image.device)
+            labels_text = torch.arange(len(logits_per_text)).to(logits_per_text.device)
+
+            image_loss = loss(logits_per_image, labels_img)
+            text_loss  = loss(logits_per_text, labels_text)
 
             total_loss = (image_loss + text_loss) / 2
             total_loss.backward()

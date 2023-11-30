@@ -15,6 +15,7 @@ import parser
 def split_dataset(args, preprocess, target_transform):
     if args.dataset == "flickr":
         # 加载Flickr数据集
+
         Dataset= Flickr30k(root='/kaggle/input/flickr30k/images',ann_file="/kaggle/input/flickr30k/captions.txt", transform = preprocess, target_transform =  target_transform )
         dataset_len = len(Dataset)
         #print(len(flickr_Dataset))
@@ -39,7 +40,6 @@ def convert_models_to_fp32(model):
 def main(args):
     
     k_vals = [1,5,10]
-    target_transform = lambda texts: clip.tokenize(texts[:5])
 
     if args.evaluate:
         print("Start evaluating", flush=True)
@@ -64,7 +64,8 @@ def main(args):
         for k, x in zip(k_vals, mAP_i2t):
             print(f" mAP@{k}: {100*x:.2f}%")
 
-    train_dataset, val_dataset, test_dataset = split_dataset(args,preprocess,target_transform)
+    train_dataset, _,_ = split_dataset(args, preprocess= None, target_transform= None)
+    _,val_dataset,_ = split_dataset(args,preprocess,target_transform)
     train_Loader = DataLoader(dataset=train_dataset, batch_size=16, shuffle=False)
     val_loader = DataLoader(dataset=val_dataset, batch_size=16, shuffle=False)
 
@@ -87,19 +88,27 @@ def main(args):
     for epoch in range(args.num_epoch):
         model.train()
         for images, texts in tqdm(train_Loader):
-            # # B x 5 x 77 -> (B*5) x 77 in the evaluation
-            
-            print(texts.shape)
-            texts = texts.squeeze(-1)
+
+            #print(texts.shape) #16*5*77 input text
+            # B x 5 x 77 -> (B*5) x 77 in evaluation
+            text = torch.flatten(text, start_dim=0, end_dim=1)
 
             images = images.to(device)
             texts = texts.to(device)
             
-            logits_per_image, logits_per_text = model(images, texts)
+            # normalized features
+            image_features = image_features / image_features.norm(dim=-1, keepdim=True)
+            text_features = text_features / text_features.norm(dim=-1, keepdim=True)
 
-            ground_truth = torch.arange(len(images),dtype=torch.long,device=device)
+            logits_per_image = image_features @ text_features.t()
+            logits_per_text = text_features @ image_features.t()
 
-            total_loss = (loss(logits_per_image,ground_truth) + loss(logits_per_text,ground_truth))/2
+            labels = torch.arange(len(logits_per_image)).to(logits_per_image.device)
+
+            image_loss = loss(logits_per_image, labels)
+            text_loss  = loss(logits_per_text, labels)
+
+            total_loss = (image_loss + text_loss) / 2
             total_loss.backward()
 
             if device == "cpu":
@@ -133,7 +142,9 @@ if __name__ == '__main__':
     args = parser.parse_arguments() #read the parameters from parser
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = clip.load(args.model, device=device)
     model, preprocess = clip.load(args.model, device=device)
+    target_transform = lambda texts: clip.tokenize(texts[:5])
 
 
     main(args)

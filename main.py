@@ -90,9 +90,13 @@ def main(args):
         model.train()
 
         for images, texts in tqdm(train_Loader):
+            optimizer.zero_grad()
 
             #print(texts.shape) #16*5*77 input text
-            # B x 5 x 77 -> (B*5) x 77 in evaluation
+            # B x 5 x 77 -> 80 x 77 in evaluation
+            # image:16*image
+
+            images = images.repeat_interleave(5, 0)  # Repeat each image 5 times
             texts = torch.flatten(texts, start_dim=0, end_dim=1)
 
             images = images.to(device)

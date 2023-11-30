@@ -122,7 +122,7 @@ def main(args):
             image_loss = loss(logits_per_image, labels_img)
             text_loss  = loss(logits_per_text, labels_text)
 
-            total_loss = (image_loss + text_loss) / 2*5
+            total_loss = (image_loss + text_loss) / (2*5)
             total_loss.backward()
 
             if device == "cpu":

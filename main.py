@@ -98,11 +98,10 @@ def main(args):
             images = images.to(device)
             texts = texts.to(device)
             
-            image_encodings, text_encodings = model(images, texts)
+            #image_encodings, text_encodings = model(images, texts)
+            image_encodings = model.encode_image(images)
+            text_encodings = model.encode_text(texts)
             
-            image_encodings = torch.cat(image_encodings)
-            text_encodings = torch.cat(text_encodings)
-
             # Normalise 
             image_encodings = image_encodings / image_encodings.norm(dim=-1, keepdim=True)
             text_encodings = text_encodings / text_encodings.norm(dim=-1, keepdim=True)

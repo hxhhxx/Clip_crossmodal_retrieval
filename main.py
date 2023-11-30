@@ -85,6 +85,12 @@ def main(args):
     ], lr=args.lr)
 
     loss = nn.CrossEntropyLoss()
+     
+    #https://github.com/openai/CLIP/issues/57
+    def convert_models_to_fp32(model): 
+        for p in model.parameters(): 
+            p.data = p.data.float() 
+            p.grad.data = p.grad.data.float() 
 
     for epoch in range(args.num_epoch):
         model.train()
@@ -102,17 +108,6 @@ def main(args):
             images = images.to(device)
             texts = texts.to(device)
             
-            # #image_encodings, text_encodings = model(images, texts)
-            # image_encodings = model.encode_image(images)
-            # text_encodings = model.encode_text(texts)
-
-            # # Normalise 
-            # image_encodings = image_encodings / image_encodings.norm(dim=-1, keepdim=True)
-            # text_encodings = text_encodings / text_encodings.norm(dim=-1, keepdim=True)
-
-            # logits_per_image = image_encodings @ text_encodings.T
-            # logits_per_text = text_encodings @ image_encodings.T
-
             #same as 
             logits_per_image, logits_per_text = model(images, texts)
 
@@ -129,7 +124,7 @@ def main(args):
             else : 
                 convert_models_to_fp32(model)
                 optimizer.step()
-                clip.model.convert_weights(model)
+                model.convert_weights(model)
 
         recall_t2i, recall_i2t, mAP_t2i, mAP_i2t = Evaluation.metrics_at_k(model, val_loader, k_vals= k_vals, batch_size=16)
 

@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 import torch.optim as optim
+from pytorch_metric_learning import losses
 import clip
 from torch.utils.data import random_split
 from Datasets.Flickr30k import Flickr30k
@@ -39,18 +40,6 @@ def convert_models_to_fp32(model):
         p.data = p.data.float() 
         p.grad.data = p.grad.data.float() 
 
-def contrastive_loss(image_embeddings, text_embeddings, margin=1.0):
-    # Calculate distances between each image and text embedding
-    distances = F.pairwise_distance(image_embeddings, text_embeddings)
-
-    # This can be more complex depending on how you define positive and negative pairs
-    contrastiveloss = torch.mean(torch.max(torch.tensor(0.0), margin - distances))
-    
-    return contrastiveloss
-
-
-#CE_loss = nn.CrossEntropyLoss()
-
 
 def main(args):
     
@@ -79,7 +68,9 @@ def main(args):
 
     optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98),eps=1e-6,weight_decay=0.2)
 
-     
+    #CE_loss = nn.CrossEntropyLoss()
+    contrastive_loss = losses.ContrastiveLoss(pos_margin=0.0, neg_margin=1)
+
     #https://github.com/openai/CLIP/issues/57
     def convert_models_to_fp32(model): 
         for p in model.parameters(): 
@@ -97,7 +88,6 @@ def main(args):
             # # B x 5 x 77 -> 80 x 77 in evaluation
             # # image:16*image -> 80*image(3*224*224)
 
-            images = images.repeat_interleave(5, 0)  # Repeat each image 5 times
             texts = torch.flatten(texts, start_dim=0, end_dim=1)
 
             images = images.to(device)
@@ -105,6 +95,8 @@ def main(args):
             
             #same as 
             logits_per_image, logits_per_text = model(images, texts)
+            logits_per_image = logits_per_image / logits_per_image.norm(dim=-1, keepdim=True)
+            logits_per_text = logits_per_text / logits_per_text.norm(dim=-1, keepdim=True)
 
             #ground_truth = torch.arange(len(images),dtype=torch.long,device=device)
             # image_loss = CE_loss(logits_per_image, ground_truth)
@@ -125,6 +117,7 @@ def main(args):
         avg_loss = total_loss / len(train_Loader)
         print(f"Epoch {epoch+1}/{args.num_epoch}, Average Loss: {avg_loss}")
 
+        model.eval()
         Evaluation.metrics_at_k(model, val_loader, k_vals= k_vals, batch_size=16)
 
 

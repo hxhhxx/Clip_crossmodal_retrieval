@@ -97,7 +97,7 @@ def main(args):
             # # B x 5 x 77 -> 80 x 77 in evaluation
             # # image:16*image -> 80*image(3*224*224)
 
-            # images = images.repeat_interleave(5, 0)  # Repeat each image 5 times
+            images = images.repeat_interleave(5, 0)  # Repeat each image 5 times
             texts = torch.flatten(texts, start_dim=0, end_dim=1)
 
             images = images.to(device)

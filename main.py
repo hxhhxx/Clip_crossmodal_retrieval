@@ -3,6 +3,7 @@ from unittest import TextTestResult
 from tqdm import tqdm
 import torch
 import torch.nn as nn
+from torch.nn import functional as F
 import torch.optim as optim
 import clip
 from torch.utils.data import random_split
@@ -80,7 +81,16 @@ def main(args):
 
     optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98),eps=1e-6,weight_decay=0.2)
 
-    loss = nn.CrossEntropyLoss()
+    #CE_loss = nn.CrossEntropyLoss()
+
+    def contrastive_loss(image_embeddings, text_embeddings, margin=1.0):
+        # Calculate distances between each image and text embedding
+        distances = F.pairwise_distance(image_embeddings, text_embeddings)
+
+        # This can be more complex depending on how you define positive and negative pairs
+        loss = torch.mean(torch.max(torch.tensor(0.0), margin - distances))
+    
+    return loss
      
     #https://github.com/openai/CLIP/issues/57
     def convert_models_to_fp32(model): 
@@ -95,12 +105,12 @@ def main(args):
         for images, texts in tqdm(train_Loader):
             optimizer.zero_grad()
 
-            #print(texts.shape) #16*5*77 input text
-            # B x 5 x 77 -> 80 x 77 in evaluation
-            # image:16*image -> 80*image(3*224*224)
+            # #print(texts.shape) #16*5*77 input text
+            # # B x 5 x 77 -> 80 x 77 in evaluation
+            # # image:16*image -> 80*image(3*224*224)
 
-            images = images.repeat_interleave(5, 0)  # Repeat each image 5 times
-            texts = torch.flatten(texts, start_dim=0, end_dim=1)
+            # images = images.repeat_interleave(5, 0)  # Repeat each image 5 times
+            # texts = torch.flatten(texts, start_dim=0, end_dim=1)
 
             images = images.to(device)
             texts = texts.to(device)
@@ -110,10 +120,12 @@ def main(args):
 
             ground_truth = torch.arange(len(images),dtype=torch.long,device=device)
 
-            image_loss = loss(logits_per_image, ground_truth)
-            text_loss  = loss(logits_per_text, ground_truth)
+            # image_loss = CE_loss(logits_per_image, ground_truth)
+            # text_loss  = CE_loss(logits_per_text, ground_truth)
 
-            total_loss = (image_loss + text_loss) / 2
+            total_loss = contrastive_loss(logits_per_image, logits_per_text)
+
+            #total_loss = (image_loss + text_loss) / 2
             total_loss.backward()
 
             if device == "cpu":

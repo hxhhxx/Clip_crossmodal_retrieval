@@ -1,21 +1,36 @@
 import numpy as np
 import os
+<<<<<<< HEAD
 from torch.utils.data import Dataset
 from PIL import Image
 import json
+=======
+import clip
+import torch
+from torchvision.datasets import CocoDetection
+from torchvision import datasets
+from torch.utils.data import Dataset, DataLoader
+from PIL import Image
+
+>>>>>>> 08e989ad70a04e71e0252f35161d636cc62b50e7
 
 class COCOcaption(Dataset):
     
     def __init__(
         self,
         root: str,
+<<<<<<< HEAD
         ann_file: str,
+=======
+        ann_dict: dict,
+>>>>>>> 08e989ad70a04e71e0252f35161d636cc62b50e7
         transform = None,
         target_transform = None):
         super(COCOcaption, self).__init__()
         self.root = root
         self.transform = transform
         self.target_transform = target_transform
+<<<<<<< HEAD
         self.ann_file = os.path.expanduser(ann_file)
 
         
@@ -38,6 +53,10 @@ class COCOcaption(Dataset):
 
         self.ann_dict = img2anno
         self.ids = list(sorted(self.ann_dict.keys()))
+=======
+        self.ann_file = ann_dict
+        self.ids = list(sorted(self.ann_file.keys()))
+>>>>>>> 08e989ad70a04e71e0252f35161d636cc62b50e7
 
     def __getitem__(self, index: int):
         """
@@ -56,6 +75,7 @@ class COCOcaption(Dataset):
             img = self.transform(img)
 
         # Captions
+<<<<<<< HEAD
         target = self.ann_dict[img_id]
         target = self.remove_punctuation(target)
 
@@ -63,11 +83,18 @@ class COCOcaption(Dataset):
             target = self.target_transform(target)
         
         return img, target
+=======
+        target = self.ann_file[img_id]
+        if self.target_transform is not None:
+            target = self.target_transform.tokenize(target)
+        return imgs, text
+>>>>>>> 08e989ad70a04e71e0252f35161d636cc62b50e7
 
 
     def __len__(self):
         return len(self.ids)
     
+<<<<<<< HEAD
     def remove_punctuation(self,texts):
         # 获取标点符号字符集
         punctuation = string.punctuation
@@ -80,3 +107,5 @@ class COCOcaption(Dataset):
             texts[i] = text.translate(translator)
 
         return texts
+=======
+>>>>>>> 08e989ad70a04e71e0252f35161d636cc62b50e7

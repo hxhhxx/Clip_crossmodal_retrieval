@@ -1,4 +1,5 @@
 from cgitb import text
+from syslog import LOG_SYSLOG
 from unittest import TextTestResult
 from tqdm import tqdm
 import torch
@@ -38,6 +39,19 @@ def convert_models_to_fp32(model):
         p.data = p.data.float() 
         p.grad.data = p.grad.data.float() 
 
+def contrastive_loss(image_embeddings, text_embeddings, margin=1.0):
+    # Calculate distances between each image and text embedding
+    distances = F.pairwise_distance(image_embeddings, text_embeddings)
+
+    # This can be more complex depending on how you define positive and negative pairs
+    contrastiveloss = torch.mean(torch.max(torch.tensor(0.0), margin - distances))
+    
+    return contrastiveloss
+
+
+#CE_loss = nn.CrossEntropyLoss()
+
+
 def main(args):
     
     k_vals = [1,5,10]
@@ -49,23 +63,7 @@ def main(args):
 
         _,_,eva_dataset = split_dataset(args,preprocess,target_transform)
         eva_Loader = DataLoader(dataset=eva_dataset, batch_size=16, shuffle=False)
-        recall_t2i, recall_i2t, mAP_t2i, mAP_i2t = Evaluation.metrics_at_k(model, eva_Loader, k_vals= k_vals, batch_size=16)
-
-        print("Text-to-image Recall@K")
-        for k, x in zip(k_vals, recall_t2i):
-            print(f" R@{k}: {100*x:.2f}%")
-
-        print("Image-to-text Recall@K")
-        for k, x in zip(k_vals, recall_i2t):
-            print(f" R@{k}: {100*x:.2f}%")
-            
-        print("Text-to-image mAP@K")
-        for k, x in zip(k_vals, mAP_t2i):
-            print(f" mAP@{k}: {100*x:.2f}%")
-            
-        print("Image-to-text mAP@K")
-        for k, x in zip(k_vals, mAP_i2t):
-            print(f" mAP@{k}: {100*x:.2f}%")
+        Evaluation.metrics_at_k(model, eva_Loader, k_vals= k_vals, batch_size=16)
 
     train_dataset, val_dataset,_ = split_dataset(args,preprocess,target_transform)
     train_Loader = DataLoader(dataset=train_dataset, batch_size=16, shuffle=False)
@@ -81,16 +79,6 @@ def main(args):
 
     optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98),eps=1e-6,weight_decay=0.2)
 
-    #CE_loss = nn.CrossEntropyLoss()
-
-    def contrastive_loss(image_embeddings, text_embeddings, margin=1.0):
-        # Calculate distances between each image and text embedding
-        distances = F.pairwise_distance(image_embeddings, text_embeddings)
-
-        # This can be more complex depending on how you define positive and negative pairs
-        loss = torch.mean(torch.max(torch.tensor(0.0), margin - distances))
-    
-    return loss
      
     #https://github.com/openai/CLIP/issues/57
     def convert_models_to_fp32(model): 
@@ -118,8 +106,7 @@ def main(args):
             #same as 
             logits_per_image, logits_per_text = model(images, texts)
 
-            ground_truth = torch.arange(len(images),dtype=torch.long,device=device)
-
+            #ground_truth = torch.arange(len(images),dtype=torch.long,device=device)
             # image_loss = CE_loss(logits_per_image, ground_truth)
             # text_loss  = CE_loss(logits_per_text, ground_truth)
 
@@ -135,24 +122,10 @@ def main(args):
                 optimizer.step()
                 clip.model.convert_weights(model)
 
-        recall_t2i, recall_i2t, mAP_t2i, mAP_i2t = Evaluation.metrics_at_k(model, val_loader, k_vals= k_vals, batch_size=16)
+        avg_loss = total_loss / len(train_Loader)
+        print(f"Epoch {epoch+1}/{args.num_epoch}, Average Loss: {avg_loss}")
 
-        print("Text-to-image Recall@K")
-        for k, x in zip(k_vals, recall_t2i):
-            print(f" R@{k}: {100*x:.2f}%")
-
-        print("Image-to-text Recall@K")
-        for k, x in zip(k_vals, recall_i2t):
-            print(f" R@{k}: {100*x:.2f}%")
-            
-        print("Text-to-image mAP@K")
-        for k, x in zip(k_vals, mAP_t2i):
-            print(f" mAP@{k}: {100*x:.2f}%")
-            
-        print("Image-to-text mAP@K")
-        for k, x in zip(k_vals, mAP_i2t):
-            print(f" mAP@{k}: {100*x:.2f}%")
-    
+        Evaluation.metrics_at_k(model, val_loader, k_vals= k_vals, batch_size=16)
 
 
 if __name__ == '__main__':

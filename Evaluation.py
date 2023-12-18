@@ -175,8 +175,25 @@ def metrics_at_k(clip, eva_Loader, k_vals: List[int], batch_size: int):
 
         mAP_i2t.append(sum(AP) / len(AP))
 
-    print("Done.")
-    return text_to_image_recall, image_to_text_recall, mAP_t2i, mAP_i2t
+    print("Evaluation Has Done.")
+
+    print("Text-to-image Recall@K")
+    for k, x in zip(k_vals, text_to_image_recall):
+        print(f" R@{k}: {100*x:.2f}%")
+
+    print("Image-to-text Recall@K")
+    for k, x in zip(k_vals, image_to_text_recall):
+            print(f" R@{k}: {100*x:.2f}%")
+            
+    print("Text-to-image mAP@K")
+    for k, x in zip(k_vals, mAP_t2i):
+        print(f" mAP@{k}: {100*x:.2f}%")
+            
+    print("Image-to-text mAP@K")
+    for k, x in zip(k_vals, mAP_i2t):
+        print(f" mAP@{k}: {100*x:.2f}%")
+
+    #return text_to_image_recall, image_to_text_recall, mAP_t2i, mAP_i2t
 
 
 

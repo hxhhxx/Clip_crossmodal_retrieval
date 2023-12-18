@@ -1,4 +1,5 @@
 from cgitb import text
+from functools import total_ordering
 from syslog import LOG_SYSLOG
 from unittest import TextTestResult
 from tqdm import tqdm
@@ -70,7 +71,7 @@ def main(args):
 
     optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98),eps=1e-6,weight_decay=0.2)
 
-    #CE_loss = nn.CrossEntropyLoss()
+    CE_loss = nn.CrossEntropyLoss()
     contrastive_loss = losses.ContrastiveLoss(pos_margin=0.0, neg_margin=1)
 
     #https://github.com/openai/CLIP/issues/57
@@ -101,14 +102,16 @@ def main(args):
 
             ground_truth = torch.arange(len(images),dtype=torch.long,device=device)
 
-            # image_loss = CE_loss(logits_per_image, ground_truth)
-            # text_loss  = CE_loss(logits_per_text, ground_truth)
+            image_loss = CE_loss(logits_per_image, ground_truth)
+            text_loss  = CE_loss(logits_per_text, ground_truth)
 
-            image_loss = contrastive_loss(logits_per_image , ground_truth)
-            text_loss = contrastive_loss(logits_per_text , ground_truth)
+            #image_loss = contrastive_loss(logits_per_image , ground_truth)
+            #text_loss = contrastive_loss(logits_per_text , ground_truth)
 
-            total_loss = (image_loss + text_loss) / 2
-            total_loss.backward()
+            loss = (image_loss + text_loss) / 2
+            loss.backward()
+
+            total_loss += loss
 
             if device == "cpu":
                 optimizer.step()

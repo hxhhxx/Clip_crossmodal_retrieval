@@ -104,9 +104,10 @@ def main(args):
             # image_loss = CE_loss(logits_per_image, ground_truth)
             # text_loss  = CE_loss(logits_per_text, ground_truth)
 
-            total_loss = contrastive_loss(logits_per_image, logits_per_text , ground_truth)
+            image_loss = contrastive_loss(logits_per_image , ground_truth)
+            text_loss = contrastive_loss(logits_per_text , ground_truth)
 
-            #total_loss = (image_loss + text_loss) / 2
+            total_loss = (image_loss + text_loss) / 2
             total_loss.backward()
 
             if device == "cpu":

@@ -46,8 +46,10 @@ def main(args):
     k_vals = [1,5,10]
     model, preprocess = clip.load(args.model, device=device)
     target_transform = lambda texts: clip.tokenize(texts[:5])
+    batch_size = 16
 
     if args.evaluate:
+        model.eval()
         print("Start evaluating", flush=True)
 
         _,_,eva_dataset = split_dataset(args,preprocess,target_transform)
@@ -88,6 +90,7 @@ def main(args):
             # # B x 5 x 77 -> 80 x 77 in evaluation
             # # image:16*image -> 80*image(3*224*224)
 
+            images = images.repeat_interleave(5, 0)  # Repeat each image 5 times
             texts = torch.flatten(texts, start_dim=0, end_dim=1)
 
             images = images.to(device)
@@ -95,14 +98,14 @@ def main(args):
             
             #same as 
             logits_per_image, logits_per_text = model(images, texts)
-            logits_per_image = logits_per_image / logits_per_image.norm(dim=-1, keepdim=True)
-            logits_per_text = logits_per_text / logits_per_text.norm(dim=-1, keepdim=True)
 
             #ground_truth = torch.arange(len(images),dtype=torch.long,device=device)
+            labels = torch.arange(batch_size).repeat_interleave(5).to(images.device)
+
             # image_loss = CE_loss(logits_per_image, ground_truth)
             # text_loss  = CE_loss(logits_per_text, ground_truth)
 
-            total_loss = contrastive_loss(logits_per_image, logits_per_text)
+            total_loss = contrastive_loss(logits_per_image, logits_per_text , labels)
 
             #total_loss = (image_loss + text_loss) / 2
             total_loss.backward()

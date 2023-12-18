@@ -8,7 +8,7 @@ import torch.optim as optim
 import clip
 from torch.utils.data import random_split
 from Datasets.Flickr30k import Flickr30k
-from Datasets.MSCOCO import COCOcaption
+#from Datasets.MSCOCO import COCOcaption
 from torch.utils.data import DataLoader
 import Evaluation
 import parser

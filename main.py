@@ -99,13 +99,12 @@ def main(args):
             #same as 
             logits_per_image, logits_per_text = model(images, texts)
 
-            #ground_truth = torch.arange(len(images),dtype=torch.long,device=device)
-            labels = torch.arange(batch_size).repeat_interleave(5).to(images.device)
+            ground_truth = torch.arange(len(images),dtype=torch.long,device=device)
 
             # image_loss = CE_loss(logits_per_image, ground_truth)
             # text_loss  = CE_loss(logits_per_text, ground_truth)
 
-            total_loss = contrastive_loss(logits_per_image, logits_per_text , labels)
+            total_loss = contrastive_loss(logits_per_image, logits_per_text , ground_truth)
 
             #total_loss = (image_loss + text_loss) / 2
             total_loss.backward()

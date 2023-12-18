@@ -82,8 +82,14 @@ def main(args):
                 p.grad.data = p.grad.data.float() 
 
     for epoch in range(args.num_epoch):
-        model.train()
+        total_loss = 0
 
+        model.eval()
+        print("start to evaluate")
+        Evaluation.metrics_at_k(model, val_loader, k_vals= k_vals, batch_size=16)
+
+        model.train()
+        print("start to train")
         for images, texts in tqdm(train_Loader):
             optimizer.zero_grad()
 
@@ -121,11 +127,9 @@ def main(args):
                 clip.model.convert_weights(model)
 
         avg_loss = total_loss / len(train_Loader)
-        print(f"Epoch {epoch+1}/{args.num_epoch}, Average Loss: {avg_loss}")
+        print(f"Epoch {epoch+1}/{args.num_epoch} has done, Average Loss: {avg_loss}")
 
-        model.eval()
-        Evaluation.metrics_at_k(model, val_loader, k_vals= k_vals, batch_size=16)
-
+        
 
 if __name__ == '__main__':
     args = parser.parse_arguments() #read the parameters from parser

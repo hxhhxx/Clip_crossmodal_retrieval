@@ -97,22 +97,29 @@ def main(args):
             # # B x 5 x 77 -> 80 x 77 in evaluation
             # # image:16*image -> 80*image(3*224*224)
 
-            images = images.repeat_interleave(5, 0)  # Repeat each image 5 times
+            #images = images.repeat_interleave(5, 0)  # Repeat each image 5 times
             texts = torch.flatten(texts, start_dim=0, end_dim=1)
 
             images = images.to(device)
             texts = texts.to(device)
             
-            #same as 
+            #encoding 
             logits_per_image, logits_per_text = model(images, texts)
+            #similarity in batch
+            logits = (logits_per_text @ logits_per_image.T)
 
-            ground_truth = torch.arange(len(images),dtype=torch.long,device=device)
+            #target:
+            images_similarity = logits_per_image @ logits_per_image.T
+            texts_similarity = logits_per_text @ logits_per_text.T
 
-            image_loss = CE_loss(logits_per_image, ground_truth)
-            text_loss  = CE_loss(logits_per_text, ground_truth)
+            #targets = torch.arange(len(images),dtype=torch.long,device=device)
+            targets = F.softmax((images_similarity + texts_similarity) / 2, dim=-1)
 
-            #image_loss = contrastive_loss(logits_per_image , ground_truth)
-            #text_loss = contrastive_loss(logits_per_text , ground_truth)
+            image_loss = CE_loss(logits.T, targets)
+            text_loss  = CE_loss(logits, targets)
+
+            #image_loss = contrastive_loss(logits_per_image , targets)
+            #text_loss = contrastive_loss(logits_per_text , targets)
 
             loss = (image_loss + text_loss) / 2
             loss.backward()

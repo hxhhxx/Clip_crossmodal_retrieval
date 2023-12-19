@@ -72,7 +72,7 @@ def main(args):
     optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98),eps=1e-6,weight_decay=0.2)
 
     CE_loss = nn.CrossEntropyLoss()
-    contrastive_loss = losses.ContrastiveLoss(pos_margin=0.0, neg_margin=1)
+    #contrastive_loss = losses.ContrastiveLoss(pos_margin=0.0, neg_margin=1)
 
     #https://github.com/openai/CLIP/issues/57
     def convert_models_to_fp32(model): 
@@ -117,6 +117,7 @@ def main(args):
             texts_similarity = logits_per_text @ logits_per_text.T
 
             #targets = torch.arange(len(images),dtype=torch.long,device=device)
+            #https://www.kaggle.com/simple-openai-clip-implementation/
             targets_texts = F.softmax((texts_similarity), dim=-1)
             targets_images = F.softmax((images_similarity), dim=-1)
 

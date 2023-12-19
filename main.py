@@ -108,7 +108,9 @@ def main(args):
             #similarity in batch
             logits_per_image = logits_per_image / logits_per_image.norm(dim=-1, keepdim=True)
             logits_per_text = logits_per_text / logits_per_text.norm(dim=-1, keepdim=True)
-            logits = (logits_per_text @ logits_per_image.T)
+            print(logits_per_image.shape)
+            print(logits_per_text.shape)
+            logits = (logits_per_text @ logits_per_image)
 
             #target:
             images_similarity = logits_per_image @ logits_per_image.T

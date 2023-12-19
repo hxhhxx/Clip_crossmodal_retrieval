@@ -106,6 +106,8 @@ def main(args):
             #encoding 
             logits_per_image, logits_per_text = model(images, texts)
             #similarity in batch
+            logits_per_image = logits_per_image / logits_per_image.norm(dim=-1, keepdim=True)
+            logits_per_text = logits_per_text / logits_per_text.norm(dim=-1, keepdim=True)
             logits = (logits_per_text @ logits_per_image.T)
 
             #target:

@@ -108,19 +108,19 @@ def main(args):
             #similarity in batch
             logits_per_image = logits_per_image / logits_per_image.norm(dim=-1, keepdim=True)
             logits_per_text = logits_per_text / logits_per_text.norm(dim=-1, keepdim=True)
-            print(logits_per_image.shape)
-            print(logits_per_text.shape)
-            logits = (logits_per_text @ logits_per_image)
+
+            logits_texts = (logits_per_text @ logits_per_image)
+            logits_images = (logits_per_image @ logits_per_text)
 
             #target:
             images_similarity = logits_per_image @ logits_per_image.T
             texts_similarity = logits_per_text @ logits_per_text.T
 
             #targets = torch.arange(len(images),dtype=torch.long,device=device)
-            targets = F.softmax((images_similarity + texts_similarity) / 2, dim=-1)
+            #targets = F.softmax((images_similarity + texts_similarity) / 2, dim=-1)
 
-            image_loss = CE_loss(logits.T, targets)
-            text_loss  = CE_loss(logits, targets)
+            image_loss = CE_loss(logits_images, images_similarity)
+            text_loss  = CE_loss(logits_texts, texts_similarity)
 
             #image_loss = contrastive_loss(logits_per_image , targets)
             #text_loss = contrastive_loss(logits_per_text , targets)

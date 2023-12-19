@@ -117,10 +117,11 @@ def main(args):
             texts_similarity = logits_per_text @ logits_per_text.T
 
             #targets = torch.arange(len(images),dtype=torch.long,device=device)
-            #targets = F.softmax((images_similarity + texts_similarity) / 2, dim=-1)
+            targets_texts = F.softmax((texts_similarity), dim=-1)
+            targets_images = F.softmax((images_similarity), dim=-1)
 
-            image_loss = CE_loss(logits_images, images_similarity)
-            text_loss  = CE_loss(logits_texts, texts_similarity)
+            image_loss = CE_loss(logits_images, targets_images)
+            text_loss  = CE_loss(logits_texts, targets_texts)
 
             #image_loss = contrastive_loss(logits_per_image , targets)
             #text_loss = contrastive_loss(logits_per_text , targets)

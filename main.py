@@ -78,9 +78,9 @@ def main(args):
     model.text_projection.requires_grad = True
     model.visual.proj.requires_grad = True
 
-    #trainable_params = [p for p in model.parameters() if p.requires_grad]
+    trainable_params = [p for p in model.parameters() if p.requires_grad]
     proj = proj_layer(model)
-    optimizer = optim.Adam(proj.parameters(), lr=args.lr, betas=(0.9,0.98),eps=1e-6,weight_decay=0.2)
+    optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98),eps=1e-6,weight_decay=0.2)
 
     CE_loss = nn.CrossEntropyLoss()
     #contrastive_loss = losses.ContrastiveLoss(pos_margin=0.0, neg_margin=1)
@@ -148,7 +148,6 @@ def main(args):
         avg_loss = total_loss / len(train_Loader)
         print(f"Epoch {epoch+1}/{args.num_epoch} has done, Average Loss: {avg_loss}")
 
-        
 
 if __name__ == '__main__':
     args = parser.parse_arguments() #read the parameters from parser

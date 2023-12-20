@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 import torch.optim as optim
-from pytorch_metric_learning import losses
+#from pytorch_metric_learning import losses
 import clip
 from torch.utils.data import random_split
 from Datasets.Flickr30k import Flickr30k
@@ -79,7 +79,7 @@ def main(args):
     model.visual.proj.requires_grad = True
 
     trainable_params = [p for p in model.parameters() if p.requires_grad]
-    proj = proj_layer(model)
+    #proj = proj_layer(model)
     optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98),eps=1e-6,weight_decay=0.2)
 
     CE_loss = nn.CrossEntropyLoss()

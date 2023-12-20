@@ -117,13 +117,14 @@ def main(args):
             logits_per_image, logits_per_text = model(images, texts)
 
             #target:
-            #https://www.kaggle.com/simple-openai-clip-implementation/
-            images_similarity = logits_per_image @ logits_per_image.T
-            texts_similarity = logits_per_text @ logits_per_text.T
-
-            #targets = torch.arange(len(images),dtype=torch.long,device=device)
-            targets_texts = F.softmax((texts_similarity), dim=-1)
-            targets_images = F.softmax((images_similarity), dim=-1)
+            # #https://www.kaggle.com/simple-openai-clip-implementation/
+            # images_similarity = logits_per_image @ logits_per_image.T
+            # texts_similarity = logits_per_text @ logits_per_text.T
+            # targets_texts = F.softmax((texts_similarity), dim=-1)
+            # targets_images = F.softmax((images_similarity), dim=-1)
+            
+            targets_images = torch.arange(len(images),dtype=torch.long,device=device)
+            targets_texts = torch.arange(len(texts),dtype=torch.long,device=device)
 
             image_loss = CE_loss(logits_per_image, targets_images)
             text_loss  = CE_loss(logits_per_text, targets_texts)

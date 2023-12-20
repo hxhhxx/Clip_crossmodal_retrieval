@@ -128,9 +128,8 @@ def main(args):
             # text_loss  = CE_loss(logits_per_text, targets_texts)
 
             #targets for the contrastive _loss
-            target_matrix = torch.eye(args.batch_size)
-            targets_texts = target_matrix.repeat_interleave(5, dim=0)
-            targets_images = targets_texts.t()
+            targets_images = torch.arange(len(texts))
+            targets_texts = targets_images.repeat_interleave(5)
 
             image_loss = contrastive_loss(logits_per_image , targets_images)
             text_loss = contrastive_loss(logits_per_text , targets_texts)

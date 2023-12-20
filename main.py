@@ -128,7 +128,7 @@ def main(args):
             # text_loss  = CE_loss(logits_per_text, targets_texts)
 
             #targets for the contrastive _loss
-            targets_images = torch.arange(len(texts))
+            targets_images = torch.arange(len(args.batch_size))
             targets_texts = targets_images.repeat_interleave(5)
 
             print(logits_per_image.shape)

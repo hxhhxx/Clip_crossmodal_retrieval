@@ -95,10 +95,6 @@ def main(args):
     for epoch in range(args.num_epoch):
         total_loss = 0
 
-        model.eval()
-        print("start to evaluate")
-        Evaluation.metrics_at_k(model, val_loader, k_vals= k_vals, batch_size=16)
-
         model.train()
         print("start to train")
         for images, texts in tqdm(train_Loader):
@@ -147,6 +143,10 @@ def main(args):
 
         avg_loss = total_loss / len(train_Loader)
         print(f"Epoch {epoch+1}/{args.num_epoch} has done, Average Loss: {avg_loss}")
+
+        model.eval()
+        print("start to evaluate")
+        Evaluation.metrics_at_k(model, val_loader, k_vals= k_vals, batch_size=16)
 
 
 if __name__ == '__main__':

@@ -104,7 +104,7 @@ def main(args):
         with torch.cuda.amp.autocast(enabled=True):
             for images, texts in tqdm(train_Loader):
                 optimizer.zero_grad()
-                with torch.set_grad_enabled(phase == "train"):
+                with torch.set_grad_enabled(True):
 
                     # #print(texts.shape) #16*5*77 input text
                     # # B x 5 x 77 -> 80 x 77 in evaluation

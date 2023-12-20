@@ -120,8 +120,8 @@ def main(args):
             # targets_texts = F.softmax((texts_similarity), dim=-1)
             # targets_images = F.softmax((images_similarity), dim=-1)
             
-            targets_images = torch.arange(len(images),dtype=torch.long,device=device)
-            targets_texts = torch.arange(len(texts),dtype=torch.long,device=device)
+            targets_images = torch.ones_like(logits_per_image, dtype=torch.long, device=device)
+            targets_texts = targets_images.T
 
             image_loss = CE_loss(logits_per_image, targets_images)
             text_loss  = CE_loss(logits_per_text, targets_texts)
@@ -153,6 +153,5 @@ if __name__ == '__main__':
     args = parser.parse_arguments() #read the parameters from parser
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-
 
     main(args)

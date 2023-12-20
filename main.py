@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 import torch.optim as optim
-#from pytorch_metric_learning import losses
+from pytorch_metric_learning import losses
 import clip
 from torch.utils.data import random_split
 from Datasets.Flickr30k import Flickr30k
@@ -82,8 +82,8 @@ def main(args):
     #proj = proj_layer(model)
     optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98),eps=1e-6,weight_decay=0.2)
 
-    CE_loss = nn.CrossEntropyLoss()
-    #contrastive_loss = losses.ContrastiveLoss(pos_margin=0.0, neg_margin=1)
+    #CE_loss = nn.CrossEntropyLoss()
+    contrastive_loss = losses.ContrastiveLoss(pos_margin=0.0, neg_margin=1)
 
     #https://github.com/openai/CLIP/issues/57
     def convert_models_to_fp32(model): 
@@ -113,21 +113,27 @@ def main(args):
             #encoding & cosine similarity as logits
             logits_per_image, logits_per_text = model(images, texts)
 
-            #target:
+            #target of kg:
             # #https://www.kaggle.com/simple-openai-clip-implementation/
             # images_similarity = logits_per_image @ logits_per_image.T
             # texts_similarity = logits_per_text @ logits_per_text.T
             # targets_texts = F.softmax((texts_similarity), dim=-1)
             # targets_images = F.softmax((images_similarity), dim=-1)
             
-            targets_images = torch.ones_like(logits_per_image, dtype=torch.long, device=device)
-            targets_texts = targets_images.T
+            #target for the entropy loss
+            # targets_images = torch.arange(len(images),dtype=torch.long,device=device)
+            # targets_texts = torch.arrange(len(texts),dtype=torch.long,device=device)
 
-            image_loss = CE_loss(logits_per_image, targets_images)
-            text_loss  = CE_loss(logits_per_text, targets_texts)
+            # image_loss = CE_loss(logits_per_image, targets_images)
+            # text_loss  = CE_loss(logits_per_text, targets_texts)
 
-            #image_loss = contrastive_loss(logits_per_image , targets)
-            #text_loss = contrastive_loss(logits_per_text , targets)
+            #targets for the contrastive _loss
+            target_matrix = torch.eye(args.batch_size)
+            targets_texts = target_matrix.repeat_interleave(5, dim=0)
+            targets_images = targets_texts.t()
+
+            image_loss = contrastive_loss(logits_per_image , targets_images)
+            text_loss = contrastive_loss(logits_per_text , targets_texts)
 
             loss = (image_loss + text_loss) / 2
             loss.backward()

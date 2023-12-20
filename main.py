@@ -35,6 +35,17 @@ def split_dataset(args, preprocess, target_transform):
 
     return  train_dataset, val_dataset ,test_dataset
 
+# new projection layer
+class proj_layer(nn.Module):
+    def __init__(self, clips_model):
+        super().__init__()
+        self.text_proj = clips_model.text_projection
+        self.image_proj = clips_model.visual.proj
+    def forward(self, image: torch.Tensor, text: torch.Tensor):
+        image_features = image @ self.image_proj
+        text_features = text @ self.text_proj
+        return image_features, text_features
+
 #https://github.com/openai/CLIP/issues/57 error using Adam optimizer
 def convert_models_to_fp32(model): 
     for p in model.parameters(): 
@@ -47,19 +58,18 @@ def main(args):
     k_vals = [1,5,10]
     model, preprocess = clip.load(args.model, device=device)
     target_transform = lambda texts: clip.tokenize(texts[:5])
-    batch_size = 16
 
     if args.evaluate:
         model.eval()
         print("Start evaluating", flush=True)
 
         _,_,eva_dataset = split_dataset(args,preprocess,target_transform)
-        eva_Loader = DataLoader(dataset=eva_dataset, batch_size=16, shuffle=False)
-        Evaluation.metrics_at_k(model, eva_Loader, k_vals= k_vals, batch_size=16)
+        eva_Loader = DataLoader(dataset=eva_dataset, batch_size=args.batch_size, shuffle=False)
+        Evaluation.metrics_at_k(model, eva_Loader, k_vals= k_vals, batch_size=args.batch_size)
 
     train_dataset, val_dataset,_ = split_dataset(args,preprocess,target_transform)
-    train_Loader = DataLoader(dataset=train_dataset, batch_size=16, shuffle=False)
-    val_loader = DataLoader(dataset=val_dataset, batch_size=16, shuffle=False)
+    train_Loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=False)
+    val_loader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, shuffle=False)
 
     for param in model.parameters():
         param.requires_grad = False
@@ -67,9 +77,9 @@ def main(args):
     model.text_projection.requires_grad = True
     model.visual.proj.requires_grad = True
 
-    trainable_params = [p for p in model.parameters() if p.requires_grad]
-
-    optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98),eps=1e-6,weight_decay=0.2)
+    #trainable_params = [p for p in model.parameters() if p.requires_grad]
+    proj = proj_layer(model)
+    optimizer = optim.Adam(proj.parameters(), lr=args.lr, betas=(0.9,0.98),eps=1e-6,weight_decay=0.2)
 
     CE_loss = nn.CrossEntropyLoss()
     #contrastive_loss = losses.ContrastiveLoss(pos_margin=0.0, neg_margin=1)
@@ -103,26 +113,20 @@ def main(args):
             images = images.to(device)
             texts = texts.to(device)
             
-            #encoding 
+            #encoding & cosine similarity as logits
             logits_per_image, logits_per_text = model(images, texts)
-            #similarity in batch
-            logits_per_image = logits_per_image / logits_per_image.norm(dim=-1, keepdim=True)
-            logits_per_text = logits_per_text / logits_per_text.norm(dim=-1, keepdim=True)
-
-            logits_texts = (logits_per_text @ logits_per_image)
-            logits_images = (logits_per_image @ logits_per_text)
 
             #target:
+            #https://www.kaggle.com/simple-openai-clip-implementation/
             images_similarity = logits_per_image @ logits_per_image.T
             texts_similarity = logits_per_text @ logits_per_text.T
 
             #targets = torch.arange(len(images),dtype=torch.long,device=device)
-            #https://www.kaggle.com/simple-openai-clip-implementation/
             targets_texts = F.softmax((texts_similarity), dim=-1)
             targets_images = F.softmax((images_similarity), dim=-1)
 
-            image_loss = CE_loss(logits_images, targets_images)
-            text_loss  = CE_loss(logits_texts, targets_texts)
+            image_loss = CE_loss(logits_per_image, targets_images)
+            text_loss  = CE_loss(logits_per_text, targets_texts)
 
             #image_loss = contrastive_loss(logits_per_image , targets)
             #text_loss = contrastive_loss(logits_per_text , targets)

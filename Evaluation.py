@@ -41,8 +41,9 @@ def encode_dataset(clip,  eva_Loader, batch_size = 16):
                 image_index += 1
 
             # B x 5 x 77 -> (B*5) x 77
+            # 16 x 5 x 77 -> 80 x 77
+            # 16 x image(3*224*224)???
             text = torch.flatten(text, start_dim=0, end_dim=1)
-            
             image_encodings.append(clip.encode_image(images))
             text_encodings.append(clip.encode_text(text))
 

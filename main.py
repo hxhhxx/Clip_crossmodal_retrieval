@@ -1,4 +1,5 @@
 from cgitb import text
+from curses import A_ALTCHARSET
 from functools import total_ordering
 from syslog import LOG_SYSLOG
 from unittest import TextTestResult
@@ -100,49 +101,51 @@ def main(args):
 
         model.train()
         print("start to train")
-        for images, texts in tqdm(train_Loader):
-            optimizer.zero_grad()
+        with torch.cuda.amp.autocast(enabled=True):
+            for images, texts in tqdm(train_Loader):
+                optimizer.zero_grad()
+                with torch.set_grad_enabled(phase == "train"):
 
-            # #print(texts.shape) #16*5*77 input text
-            # # B x 5 x 77 -> 80 x 77 in evaluation
-            # # image:16*image -> 80*image(3*224*224)
+                    # #print(texts.shape) #16*5*77 input text
+                    # # B x 5 x 77 -> 80 x 77 in evaluation
+                    # # image:16*image -> 80*image(3*224*224)
 
-            #images = images.repeat_interleave(5, 0)  # Repeat each image 5 times
-            texts = torch.flatten(texts, start_dim=0, end_dim=1)
+                    #images = images.repeat_interleave(5, 0)  # Repeat each image 5 times
+                    texts = torch.flatten(texts, start_dim=0, end_dim=1)
 
-            images = images.to(device)
-            texts = texts.to(device)
-            
-            #encoding & cosine similarity as logits
-            logits_per_image, logits_per_text = model(images, texts)
+                    images = images.to(device)
+                    texts = texts.to(device)
+                    
+                    #encoding & cosine similarity as logits
+                    logits_per_image, logits_per_text = model(images, texts)
 
-            #target:
-            # #https://www.kaggle.com/simple-openai-clip-implementation/
-            # images_similarity = logits_per_image @ logits_per_image.T
-            # texts_similarity = logits_per_text @ logits_per_text.T
-            # targets_texts = F.softmax((texts_similarity), dim=-1)
-            # targets_images = F.softmax((images_similarity), dim=-1)
-            
-            targets_images = torch.arange(len(images),dtype=torch.long,device=device)
-            targets_texts = torch.arange(len(texts),dtype=torch.long,device=device)
+                    #target:
+                    # #https://www.kaggle.com/simple-openai-clip-implementation/
+                    # images_similarity = logits_per_image @ logits_per_image.T
+                    # texts_similarity = logits_per_text @ logits_per_text.T
+                    # targets_texts = F.softmax((texts_similarity), dim=-1)
+                    # targets_images = F.softmax((images_similarity), dim=-1)
+                    
+                    targets_images = torch.arange(len(images),dtype=torch.long,device=device)
+                    targets_texts = torch.arange(len(texts),dtype=torch.long,device=device)
 
-            image_loss = CE_loss(logits_per_image, targets_images)
-            text_loss  = CE_loss(logits_per_text, targets_texts)
+                    image_loss = CE_loss(logits_per_image, targets_images)
+                    text_loss  = CE_loss(logits_per_text, targets_texts)
 
-            #image_loss = contrastive_loss(logits_per_image , targets)
-            #text_loss = contrastive_loss(logits_per_text , targets)
+                    #image_loss = contrastive_loss(logits_per_image , targets)
+                    #text_loss = contrastive_loss(logits_per_text , targets)
 
-            loss = (image_loss + text_loss) / 2
-            loss.backward()
+                    loss = (image_loss + text_loss) / 2
+                    loss.backward()
 
-            total_loss += loss
+                    total_loss += loss
 
-            if device == "cpu":
-                optimizer.step()
-            else : 
-                convert_models_to_fp32(model)
-                optimizer.step()
-                clip.model.convert_weights(model)
+                    if device == "cpu":
+                        optimizer.step()
+                    else : 
+                        convert_models_to_fp32(model)
+                        optimizer.step()
+                        clip.model.convert_weights(model)
 
         avg_loss = total_loss / len(train_Loader)
         print(f"Epoch {epoch+1}/{args.num_epoch} has done, Average Loss: {avg_loss}")

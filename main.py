@@ -50,7 +50,7 @@ def contrastive_loss(logits_per_image, logits_per_text, margin=1.0):
     distance_per_image,_ = torch.sort(distance_per_image, dim=1, descending=False)
     distance_per_text,_ = torch.sort(distance_per_text, dim=1, descending=False)
     
-    print(distance_per_image[:, :10])
+    print(distance_per_image)
 
     # loss of the positive pairs
     positive_loss_image = distance_per_image[:, :5].mean()

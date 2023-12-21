@@ -126,7 +126,18 @@ def main(args):
             texts = texts.to(device)
 
             #encoding & cosine similarity as logits
-            logits_per_image, logits_per_text = model(images, texts)
+         
+            #logits_per_image, logits_per_text = model(images, texts)
+
+            image_encodings = model.encode_image(images)
+            text_encodings = model.encode_text(texts)
+            
+            # Normalise 
+            image_encodings = image_encodings / image_encodings.norm(dim=-1, keepdim=True)
+            text_encodings = text_encodings / text_encodings.norm(dim=-1, keepdim=True)
+
+            logits_per_image = image_encodings @ text_encodings.T
+            logits_per_text = text_encodings @ image_encodings.T
             
             if args.loss == "cross_entropy" :
 

@@ -63,7 +63,7 @@ def contrastive_loss(logits_per_image, logits_per_text, margin=1.0):
 
     # #print(negative_loss_image)
 
-    text_i_matrix = torch.eye(16).repeat_interleave(5)
+    text_i_matrix = torch.eye(len(logits_per_image)).repeat_interleave(5)
     image_i_matrix = text_i_matrix.T
     
     distance_per_image = margin - logits_per_image

@@ -120,9 +120,11 @@ def main(args):
             # targets_texts = F.softmax((texts_similarity), dim=-1)
             # targets_images = F.softmax((images_similarity), dim=-1)
             
-            #target for the entropy loss
+            # target for the entropy loss
             # targets_images = torch.arange(len(images),dtype=torch.long,device=device)
             # targets_texts = torch.arrange(len(texts),dtype=torch.long,device=device)
+            targets_images = torch.arange(len(images),dtype=torch.long,device=device)
+            targets_texts = targets_images.repeat_interleave(5)
 
             #targets for the contrastive _loss
             targets_images = torch.arange(len(images))

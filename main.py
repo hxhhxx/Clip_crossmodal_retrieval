@@ -48,9 +48,11 @@ class proj_layer(nn.Module):
         return image_features, text_features
 
 def contrastive_loss(logits_per_image, logits_per_text, margin=1.0):
+    logits_per_image = 1 - logits_per_image
+    logits_per_text = 1 - logits_per_text
 
-    logits_per_image = torch.sort(logits_per_image, dim=1, descending=True)
-    logits_per_text = torch.sort(logits_per_text, dim=1, descending=True)
+    logits_per_image,_ = torch.sort(logits_per_image, dim=1, descending=False)
+    logits_per_text,_ = torch.sort(logits_per_text, dim=1, descending=False)
 
     # 计算正样本损失（每个图像与对应文本的相似度）
     positive_loss_image = logits_per_image[:, :5].mean()

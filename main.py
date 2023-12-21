@@ -107,11 +107,11 @@ def main(args):
             #images = images.repeat_interleave(5, 0)  # Repeat each image 5 times
             texts = torch.flatten(texts, start_dim=0, end_dim=1)
 
-            images = images.to(device)
-            texts = texts.to(device)
-            
             #encoding & cosine similarity as logits
             logits_per_image, logits_per_text = model(images, texts)
+
+            logits_per_image = logits_per_image.to(device)
+            logits_per_text = logits_per_text.to(device)
 
             #target of kg:
             # #https://www.kaggle.com/simple-openai-clip-implementation/
@@ -124,7 +124,7 @@ def main(args):
             # targets_images = torch.arange(len(images),dtype=torch.long,device=device)
             # targets_texts = torch.arrange(len(texts),dtype=torch.long,device=device)
             targets_images = torch.arange(len(images),dtype=torch.long,device=device)
-            targets_texts = targets_images.repeat_interleave(5)
+            targets_texts = targets_images.repeat_interleave(5).to(device)
 
             #targets for the contrastive _loss
             targets_images = torch.arange(len(images))

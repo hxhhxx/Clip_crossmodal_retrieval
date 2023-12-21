@@ -82,7 +82,7 @@ def main(args):
     #proj = proj_layer(model)
     optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98),eps=1e-6,weight_decay=0.2)
 
-    #CE_loss = nn.CrossEntropyLoss()
+    CE_loss = nn.CrossEntropyLoss()
     contrastive_loss = losses.ContrastiveLoss(pos_margin=0.0, neg_margin=1)
 
     #https://github.com/openai/CLIP/issues/57
@@ -133,15 +133,15 @@ def main(args):
             # print(targets_images.shape)
             # print(targets_texts.shape)
 
-            # image_loss = CE_loss(logits_per_image, targets_images)
-            # text_loss  = CE_loss(logits_per_text, targets_texts)
-            image_loss = contrastive_loss(logits_per_image , targets_images)
-            text_loss = contrastive_loss(logits_per_text , targets_texts)
+            image_loss = CE_loss(logits_per_image, targets_images)
+            text_loss  = CE_loss(logits_per_text, targets_texts)
+            #image_loss = contrastive_loss(logits_per_image , targets_images)
+            #text_loss = contrastive_loss(logits_per_text , targets_texts)
 
             # print(image_loss)
             # print(text_loss)
 
-            loss = (image_loss + text_loss/5) / 2
+            loss = (image_loss + text_loss) / 2
             loss.backward()
 
             total_loss += loss

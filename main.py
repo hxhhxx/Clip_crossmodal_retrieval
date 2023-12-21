@@ -125,7 +125,7 @@ def main(args):
             # targets_texts = torch.arrange(len(texts),dtype=torch.long,device=device)
 
             #targets for the contrastive _loss
-            targets_images = torch.arange(args.batch_size)
+            targets_images = torch.arange(len(images))
             targets_texts = targets_images.repeat_interleave(5)
 
             print(logits_per_image.shape)
@@ -141,7 +141,7 @@ def main(args):
             print(image_loss)
             print(text_loss)
 
-            loss = (image_loss + text_loss) / 2
+            loss = (image_loss + text_loss/5) / 2
             loss.backward()
 
             total_loss += loss

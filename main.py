@@ -44,15 +44,13 @@ class proj_layer(nn.Module):
 
 def contrastive_loss(logits_per_image, logits_per_text, margin=1.0):
 
-    print(logits_per_image)
-    print(logits_per_text)
     logits_per_image = 1 - logits_per_image
     logits_per_text = 1 - logits_per_text
 
     logits_per_image,_ = torch.sort(logits_per_image, dim=1, descending=False)
     logits_per_text,_ = torch.sort(logits_per_text, dim=1, descending=False)
     
-    print(logits_per_image[:, :5])
+    #print(logits_per_image[:, :5])
 
     # loss of the positive pairs
     positive_loss_image = logits_per_image[:, :5].mean()
@@ -61,7 +59,7 @@ def contrastive_loss(logits_per_image, logits_per_text, margin=1.0):
     negative_loss_image = F.relu(margin - logits_per_image[:, 5:]).mean()
     negative_loss_text = F.relu(margin - logits_per_text[:, 1:]).mean()
 
-    print(negative_loss_image)
+    #print(negative_loss_image)
 
     total_loss= positive_loss_image + negative_loss_image + positive_loss_text + negative_loss_text
 

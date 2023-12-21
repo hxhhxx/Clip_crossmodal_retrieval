@@ -44,23 +44,36 @@ class proj_layer(nn.Module):
 
 def contrastive_loss(logits_per_image, logits_per_text, margin=1.0):
 
+    # distance_per_image = margin - logits_per_image
+    # distance_per_text = margin - logits_per_text
+
+    # distance_per_image,_ = torch.sort(distance_per_image, dim=1, descending=False)
+    # distance_per_text,_ = torch.sort(distance_per_text, dim=1, descending=False)
+    
+    # print(distance_per_image)
+    # # [0.6895, 0.6982, 0.7227,  ..., 0.9053, 0.9058, 0.9399] similarities are closed 
+
+    # # loss of the positive pairs
+    # positive_loss_image = distance_per_image[:, :5].mean()
+    # positive_loss_text = distance_per_text[:, :1].mean()
+
+    # # loss of the negative pairs
+    # negative_loss_image = F.relu(margin - logits_per_image[:, 5:]).mean()
+    # negative_loss_text = F.relu(margin - logits_per_text[:, 1:]).mean()
+
+    # #print(negative_loss_image)
+
+    text_i_matrix = torch.eye(16).repeat_interleave(5)
+    image_i_matrix = text_i_matrix.T
+    
     distance_per_image = margin - logits_per_image
     distance_per_text = margin - logits_per_text
 
-    distance_per_image,_ = torch.sort(distance_per_image, dim=1, descending=False)
-    distance_per_text,_ = torch.sort(distance_per_text, dim=1, descending=False)
-    
-    print(distance_per_image)
+    positive_loss_image = (distance_per_image * image_i_matrix).mean()
+    positive_loss_text = (distance_per_text * text_i_matrix).mean()
 
-    # loss of the positive pairs
-    positive_loss_image = distance_per_image[:, :5].mean()
-    positive_loss_text = distance_per_text[:, :1].mean()
-
-    # loss of the negative pairs
-    negative_loss_image = F.relu(margin - logits_per_image[:, 5:]).mean()
-    negative_loss_text = F.relu(margin - logits_per_text[:, 1:]).mean()
-
-    #print(negative_loss_image)
+    negative_loss_image = F.relu(distance_per_image * (1-image_i_matrix)).mean()
+    negative_loss_text = F.relu(distance_per_text * (1-text_i_matrix)).mean()
 
     total_loss= positive_loss_image + negative_loss_image + positive_loss_text + negative_loss_text
 

@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 import torch.optim as optim
-from pytorch_metric_learning import losses
+#from pytorch_metric_learning import losses
 import clip
 from torch.utils.data import random_split
 from Datasets.Flickr30k import Flickr30k
@@ -47,6 +47,27 @@ class proj_layer(nn.Module):
         text_features = text @ self.text_proj
         return image_features, text_features
 
+def contrastive_loss(logits_per_image, logits_per_text, margin=1.0):
+
+    logits_per_image = torch.argsort(logits_per_image, dim=1, descending=True)
+    logits_per_text = torch.argsort(logits_per_text, dim=1, descending=True)
+
+    # 转换为相似度的负值（因为低距离表示高相似度）
+    negative_similarity_image = -logits_per_image
+    negative_similarity_text = -logits_per_text
+
+    # 计算正样本损失（每个图像与对应文本的相似度）
+    positive_loss_image = negative_similarity_image[:, :5].mean()
+    positive_loss_text = negative_similarity_text[:, :1].mean()
+    # 计算负样本损失
+    negative_loss_image = F.relu(margin - negative_similarity_image[:, 5:]).mean()
+    negative_loss_text = F.relu(margin - negative_similarity_text[:, 1:]).mean()
+
+    # 总损失是图像和文本正负样本损失的和
+    total_loss= positive_loss_image + negative_loss_image + positive_loss_text + negative_loss_text
+
+    return total_loss/2
+
 #https://github.com/openai/CLIP/issues/57 error using Adam optimizer
 def convert_models_to_fp32(model): 
     for p in model.parameters(): 
@@ -83,7 +104,6 @@ def main(args):
     optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98),eps=1e-6,weight_decay=0.2)
 
     CE_loss = nn.CrossEntropyLoss()
-    contrastive_loss = losses.ContrastiveLoss(pos_margin=0.0, neg_margin=1)
 
     #https://github.com/openai/CLIP/issues/57
     def convert_models_to_fp32(model): 
@@ -112,41 +132,39 @@ def main(args):
 
             #encoding & cosine similarity as logits
             logits_per_image, logits_per_text = model(images, texts)
-
-            logits_per_image = logits_per_image.to(device)
-            logits_per_text = logits_per_text.to(device)
-
-            #target of kg:
-            # #https://www.kaggle.com/simple-openai-clip-implementation/
-            # images_similarity = logits_per_image @ logits_per_image.T
-            # texts_similarity = logits_per_text @ logits_per_text.T
-            # targets_texts = F.softmax((texts_similarity), dim=-1)
-            # targets_images = F.softmax((images_similarity), dim=-1)
             
-            # target for the entropy loss
-            # targets_images = torch.arange(len(images),dtype=torch.long,device=device)
-            # targets_texts = torch.arrange(len(texts),dtype=torch.long,device=device)
-            targets_images = torch.arange(len(images),dtype=torch.long, device=device).to(device)
-            targets_texts = targets_images.repeat_interleave(5).to(device)
+            if args.loss == "cross_entropy" :
+                # target for the entropy loss
+                # targets_images = torch.arange(len(images),dtype=torch.long,device=device)
+                # targets_texts = torch.arrange(len(texts),dtype=torch.long,device=device)
+                targets_images = torch.arange(len(images),dtype=torch.long, device=device)
+                targets_texts = targets_images.repeat_interleave(5).to(device)
 
-            #targets for the contrastive _loss
-            #targets_images = torch.arange(len(images))
-            #targets_texts = targets_images.repeat_interleave(5)
+                image_loss = CE_loss(logits_per_image, targets_images)
+                text_loss  = CE_loss(logits_per_text, targets_texts)
+
+                loss = (image_loss + text_loss) / 2
+
+            if args.loss == "contrastive" :
+                #targets for the contrastive _loss
+                #targets for the contrastive _loss
+                #targets_images = torch.arange(len(images))
+                #targets_texts = targets_images.repeat_interleave(5)
+
+                #image_loss = contrastive_loss(logits_per_image , targets_images)
+                #text_loss = contrastive_loss(logits_per_text , targets_texts)
+                
+                #contrastive loss from define
+                loss = contrastive_loss(logits_per_image, logits_per_text)
 
             # print(logits_per_image.shape)
             # print(logits_per_text.shape)
             # print(targets_images.shape)
             # print(targets_texts.shape)
 
-            image_loss = CE_loss(logits_per_image, targets_images)
-            text_loss  = CE_loss(logits_per_text, targets_texts)
-            #image_loss = contrastive_loss(logits_per_image , targets_images)
-            #text_loss = contrastive_loss(logits_per_text , targets_texts)
-
             # print(image_loss)
             # print(text_loss)
-
-            loss = (image_loss + text_loss) / 2
+            
             loss.backward()
 
             total_loss += loss

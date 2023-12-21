@@ -107,6 +107,9 @@ def main(args):
             #images = images.repeat_interleave(5, 0)  # Repeat each image 5 times
             texts = torch.flatten(texts, start_dim=0, end_dim=1)
 
+            images = images.to(device)
+            texts = texts.to(device)
+
             #encoding & cosine similarity as logits
             logits_per_image, logits_per_text = model(images, texts)
 

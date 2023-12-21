@@ -49,19 +49,15 @@ class proj_layer(nn.Module):
 
 def contrastive_loss(logits_per_image, logits_per_text, margin=1.0):
 
-    logits_per_image = torch.argsort(logits_per_image, dim=1, descending=True)
-    logits_per_text = torch.argsort(logits_per_text, dim=1, descending=True)
-
-    # 转换为相似度的负值（因为低距离表示高相似度）
-    negative_similarity_image = -logits_per_image
-    negative_similarity_text = -logits_per_text
+    logits_per_image = torch.sort(logits_per_image, dim=1, descending=True)
+    logits_per_text = torch.sort(logits_per_text, dim=1, descending=True)
 
     # 计算正样本损失（每个图像与对应文本的相似度）
-    positive_loss_image = negative_similarity_image[:, :5].mean()
-    positive_loss_text = negative_similarity_text[:, :1].mean()
+    positive_loss_image = logits_per_image[:, :5].mean()
+    positive_loss_text = logits_per_text[:, :1].mean()
     # 计算负样本损失
-    negative_loss_image = F.relu(margin - negative_similarity_image[:, 5:]).mean()
-    negative_loss_text = F.relu(margin - negative_similarity_text[:, 1:]).mean()
+    negative_loss_image = F.relu(margin - logits_per_image[:, 5:]).mean()
+    negative_loss_text = F.relu(margin - logits_per_text[:, 1:]).mean()
 
     # 总损失是图像和文本正负样本损失的和
     total_loss= positive_loss_image + negative_loss_image + positive_loss_text + negative_loss_text

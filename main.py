@@ -130,8 +130,8 @@ def main(args):
             targets_texts = targets_images.repeat_interleave(5).to(device)
 
             #targets for the contrastive _loss
-            targets_images = torch.arange(len(images))
-            targets_texts = targets_images.repeat_interleave(5)
+            #targets_images = torch.arange(len(images))
+            #targets_texts = targets_images.repeat_interleave(5)
 
             # print(logits_per_image.shape)
             # print(logits_per_text.shape)

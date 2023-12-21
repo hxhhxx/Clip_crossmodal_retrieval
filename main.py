@@ -1,8 +1,4 @@
-from cgitb import text
-from curses import A_ALTCHARSET
-from functools import total_ordering
-from syslog import LOG_SYSLOG
-from unittest import TextTestResult
+
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -20,7 +16,6 @@ import parser
 def split_dataset(args, preprocess, target_transform):
     if args.dataset == "flickr":
         # 加载Flickr数据集
-
         Dataset= Flickr30k(root='/kaggle/input/flickr30k/images',ann_file="/kaggle/input/flickr30k/captions.txt", transform = preprocess, target_transform =  target_transform )
         dataset_len = len(Dataset)
         #print(len(flickr_Dataset))
@@ -48,20 +43,26 @@ class proj_layer(nn.Module):
         return image_features, text_features
 
 def contrastive_loss(logits_per_image, logits_per_text, margin=1.0):
+
+    print(logits_per_image)
+    print(logits_per_text)
     logits_per_image = 1 - logits_per_image
     logits_per_text = 1 - logits_per_text
 
     logits_per_image,_ = torch.sort(logits_per_image, dim=1, descending=False)
     logits_per_text,_ = torch.sort(logits_per_text, dim=1, descending=False)
+    
+    print(logits_per_image[:, :5])
 
-    # 计算正样本损失（每个图像与对应文本的相似度）
+    # loss of the positive pairs
     positive_loss_image = logits_per_image[:, :5].mean()
     positive_loss_text = logits_per_text[:, :1].mean()
-    # 计算负样本损失
+    # loss of the negative pairs
     negative_loss_image = F.relu(margin - logits_per_image[:, 5:]).mean()
     negative_loss_text = F.relu(margin - logits_per_text[:, 1:]).mean()
 
-    # 总损失是图像和文本正负样本损失的和
+    print(negative_loss_image)
+
     total_loss= positive_loss_image + negative_loss_image + positive_loss_text + negative_loss_text
 
     return total_loss/2
@@ -118,12 +119,8 @@ def main(args):
         for images, texts in tqdm(train_Loader):
             optimizer.zero_grad()
 
-            # #print(texts.shape) #16*5*77 input text
-            # # B x 5 x 77 -> 80 x 77 in evaluation
-            # # image:16*image -> 80*image(3*224*224)
-
-            #images = images.repeat_interleave(5, 0)  # Repeat each image 5 times
-            texts = torch.flatten(texts, start_dim=0, end_dim=1)
+            texts = torch.flatten(texts, start_dim=0, end_dim=1)  # B x 5 x 77 -> 80 x 77 
+            #images = images.repeat_interleave(5, 0) # image:16*image -> 80*image(3*224*224)
 
             images = images.to(device)
             texts = texts.to(device)
@@ -132,36 +129,28 @@ def main(args):
             logits_per_image, logits_per_text = model(images, texts)
             
             if args.loss == "cross_entropy" :
-                # target for the entropy loss
+
                 # targets_images = torch.arange(len(images),dtype=torch.long,device=device)
                 # targets_texts = torch.arrange(len(texts),dtype=torch.long,device=device)
+
                 targets_images = torch.arange(len(images),dtype=torch.long, device=device)
                 targets_texts = targets_images.repeat_interleave(5).to(device)
 
                 image_loss = CE_loss(logits_per_image, targets_images)
                 text_loss  = CE_loss(logits_per_text, targets_texts)
-
-                loss = (image_loss + text_loss) / 2
+                loss = (image_loss + text_loss)/2
 
             if args.loss == "contrastive" :
-                #targets for the contrastive _loss
-                #targets for the contrastive _loss
+
                 #targets_images = torch.arange(len(images))
                 #targets_texts = targets_images.repeat_interleave(5)
 
                 #image_loss = contrastive_loss(logits_per_image , targets_images)
                 #text_loss = contrastive_loss(logits_per_text , targets_texts)
+                #loss = (image_loss + text_loss)/2
                 
                 #contrastive loss from define
                 loss = contrastive_loss(logits_per_image, logits_per_text)
-
-            # print(logits_per_image.shape)
-            # print(logits_per_text.shape)
-            # print(targets_images.shape)
-            # print(targets_texts.shape)
-
-            # print(image_loss)
-            # print(text_loss)
             
             loss.backward()
 

@@ -126,7 +126,7 @@ def main(args):
             # target for the entropy loss
             # targets_images = torch.arange(len(images),dtype=torch.long,device=device)
             # targets_texts = torch.arrange(len(texts),dtype=torch.long,device=device)
-            targets_images = torch.arange(len(images),dtype=torch.long,device=device)
+            targets_images = torch.arange(len(images),dtype=torch.long, device=device).to(device)
             targets_texts = targets_images.repeat_interleave(5).to(device)
 
             #targets for the contrastive _loss

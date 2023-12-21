@@ -128,18 +128,18 @@ def main(args):
             targets_images = torch.arange(len(images))
             targets_texts = targets_images.repeat_interleave(5)
 
-            print(logits_per_image.shape)
-            print(logits_per_text.shape)
-            print(targets_images.shape)
-            print(targets_texts.shape)
+            # print(logits_per_image.shape)
+            # print(logits_per_text.shape)
+            # print(targets_images.shape)
+            # print(targets_texts.shape)
 
             # image_loss = CE_loss(logits_per_image, targets_images)
             # text_loss  = CE_loss(logits_per_text, targets_texts)
             image_loss = contrastive_loss(logits_per_image , targets_images)
             text_loss = contrastive_loss(logits_per_text , targets_texts)
 
-            print(image_loss)
-            print(text_loss)
+            # print(image_loss)
+            # print(text_loss)
 
             loss = (image_loss + text_loss/5) / 2
             loss.backward()

@@ -69,6 +69,9 @@ def contrastive_loss(logits_per_image, logits_per_text, margin=1.0):
     distance_per_image = margin - logits_per_image
     distance_per_text = margin - logits_per_text
 
+    print(distance_per_image.shape)
+    print(image_i_matrix.shape)
+
     positive_loss_image = (distance_per_image * image_i_matrix).mean()
     positive_loss_text = (distance_per_text * text_i_matrix).mean()
 

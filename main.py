@@ -148,7 +148,8 @@ def main(args):
             image_encodings = image_encodings / image_encodings.norm(dim=-1, keepdim=True)
             text_encodings = text_encodings / text_encodings.norm(dim=-1, keepdim=True)
 
-            logits_per_image = image_encodings @ text_encodings.T
+            temperature = 0.07
+            logits_per_image = (image_encodings @ text_encodings.T)/ temperature
             logits_per_text = logits_per_image.T
             
             if args.loss == "cross_entropy" :

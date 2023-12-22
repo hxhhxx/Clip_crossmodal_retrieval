@@ -131,7 +131,7 @@ def main(args):
             optimizer.zero_grad()
 
             #texts: batch size x 77
-            random_indices = torch.randint(0, 5, (batch_size,))
+            random_indices = torch.randint(0, 5, (len(images),))
             texts = torch.stack([texts[i, idx] for i, idx in enumerate(random_indices)])
 
             images = images.to(device)

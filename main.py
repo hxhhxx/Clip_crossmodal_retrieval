@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 import torch.optim as optim
-#from pytorch_metric_learning import losses
+from pytorch_metric_learning import losses
 import clip
 from torch.utils.data import random_split
 from Datasets.Flickr30k import Flickr30k
@@ -114,6 +114,7 @@ def main(args):
     optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98),eps=1e-6,weight_decay=0.2)
 
     CE_loss = nn.CrossEntropyLoss()
+    contrastive_loss = losses.ContrastiveLoss(pos_margin=0.0, neg_margin=1)
 
     #https://github.com/openai/CLIP/issues/57
     def convert_models_to_fp32(model): 
@@ -162,15 +163,13 @@ def main(args):
             if args.loss == "contrastive" :
                 
                 #使用pytorch_metric_learning库结果和我自己写的第一个一样很差，猜测可能是相似值过于靠近
-                #targets_images = torch.arange(len(images))
-                #targets_texts = targets_images.repeat_interleave(5)
+                targets = torch.arange(len(images))
 
-                #image_loss = contrastive_loss(logits_per_image , targets_images)
-                #text_loss = contrastive_loss(logits_per_text , targets_texts)
-                #loss = (image_loss + text_loss)/2
-                
-                #contrastive loss from define
-                loss = contrastive_loss(logits_per_image, logits_per_text)
+                image_loss = contrastive_loss(logits_per_image , targets)
+                text_loss = contrastive_loss(logits_per_text , targets)
+                loss = (image_loss + text_loss)/2
+            
+                # loss = contrastive_loss(logits_per_image, logits_per_text)
             
             loss.backward()
 

@@ -43,14 +43,14 @@ class proj_layer(nn.Module):
         return image_features, text_features
 
 def contrastive_loss(logits_per_image, logits_per_text, margin=1.0):
-
+    #这个结果很差：猜测可能是前五个的similarities结果并不好并不是positive，similarities are closed 
     # distance_per_image = margin - logits_per_image
     # distance_per_text = margin - logits_per_text
 
     # distance_per_image,_ = torch.sort(distance_per_image, dim=1, descending=False)
     # distance_per_text,_ = torch.sort(distance_per_text, dim=1, descending=False)
     
-    # print(distance_per_image)
+    # #print(distance_per_image)
     # # [0.6895, 0.6982, 0.7227,  ..., 0.9053, 0.9058, 0.9399] similarities are closed 
 
     # # loss of the positive pairs
@@ -61,7 +61,6 @@ def contrastive_loss(logits_per_image, logits_per_text, margin=1.0):
     # negative_loss_image = F.relu(margin - logits_per_image[:, 5:]).mean()
     # negative_loss_text = F.relu(margin - logits_per_text[:, 1:]).mean()
 
-    # #print(negative_loss_image)
 
     text_i_matrix = torch.eye(len(logits_per_image)).repeat_interleave(5,dim=0).to(device)
     image_i_matrix = torch.transpose(text_i_matrix, 0, 1).to(device)
@@ -131,16 +130,17 @@ def main(args):
         for images, texts in tqdm(train_Loader):
             optimizer.zero_grad()
 
-            texts = torch.flatten(texts, start_dim=0, end_dim=1)  # B x 5 x 77 -> 80 x 77 
-            #images = images.repeat_interleave(5, 0) # image:16*image -> 80*image(3*224*224)
+            #texts: batch size x 77
+            random_indices = torch.randint(0, 5, (batch_size,))
+            texts = torch.stack([texts[i, idx] for i, idx in enumerate(random_indices)])
 
             images = images.to(device)
             texts = texts.to(device)
 
-            #encoding & cosine similarity as logits
-         
+            #encoding & cosine similarity as logits       
             #logits_per_image, logits_per_text = model(images, texts)
-
+            
+            #encoding & cosine similarity as logits       
             image_encodings = model.encode_image(images)
             text_encodings = model.encode_text(texts)
             
@@ -149,22 +149,18 @@ def main(args):
             text_encodings = text_encodings / text_encodings.norm(dim=-1, keepdim=True)
 
             logits_per_image = image_encodings @ text_encodings.T
-            logits_per_text = text_encodings @ image_encodings.T
+            logits_per_text = logits_per_image.T
             
             if args.loss == "cross_entropy" :
+                targets = torch.arange(len(images),dtype=torch.long, device=device)
 
-                # targets_images = torch.arange(len(images),dtype=torch.long,device=device)
-                # targets_texts = torch.arrange(len(texts),dtype=torch.long,device=device)
-
-                targets_images = torch.arange(len(images),dtype=torch.long, device=device)
-                targets_texts = targets_images.repeat_interleave(5).to(device)
-
-                image_loss = CE_loss(logits_per_image, targets_images)
-                text_loss  = CE_loss(logits_per_text, targets_texts)
+                image_loss = CE_loss(logits_per_image, targets)
+                text_loss  = CE_loss(logits_per_text, targets)
                 loss = (image_loss + text_loss)/2
 
             if args.loss == "contrastive" :
-
+                
+                #使用pytorch_metric_learning库结果和我自己写的第一个一样很差，猜测可能是相似值过于靠近
                 #targets_images = torch.arange(len(images))
                 #targets_texts = targets_images.repeat_interleave(5)
 

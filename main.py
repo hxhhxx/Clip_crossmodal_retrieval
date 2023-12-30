@@ -42,42 +42,6 @@ class proj_layer(nn.Module):
         text_features = text @ self.text_proj
         return image_features, text_features
 
-def contrastive_loss(logits_per_image, logits_per_text, margin=1.0):
-    #这个结果很差：猜测可能是前五个的similarities结果并不好并不是positive，similarities are closed 
-    # distance_per_image = margin - logits_per_image
-    # distance_per_text = margin - logits_per_text
-
-    # distance_per_image,_ = torch.sort(distance_per_image, dim=1, descending=False)
-    # distance_per_text,_ = torch.sort(distance_per_text, dim=1, descending=False)
-    
-    # #print(distance_per_image)
-    # # [0.6895, 0.6982, 0.7227,  ..., 0.9053, 0.9058, 0.9399] similarities are closed 
-
-    # # loss of the positive pairs
-    # positive_loss_image = distance_per_image[:, :5].mean()
-    # positive_loss_text = distance_per_text[:, :1].mean()
-
-    # # loss of the negative pairs
-    # negative_loss_image = F.relu(margin - logits_per_image[:, 5:]).mean()
-    # negative_loss_text = F.relu(margin - logits_per_text[:, 1:]).mean()
-
-
-    text_i_matrix = torch.eye(len(logits_per_image)).repeat_interleave(5,dim=0).to(device)
-    image_i_matrix = torch.transpose(text_i_matrix, 0, 1).to(device)
-
-    distance_per_image = margin - logits_per_image
-    distance_per_text = margin - logits_per_text
-
-    positive_loss_image = (distance_per_image * image_i_matrix).mean()
-    positive_loss_text = (distance_per_text * text_i_matrix).mean()
-
-    negative_loss_image = F.relu(distance_per_image * (1-image_i_matrix)).mean()
-    negative_loss_text = F.relu(distance_per_text * (1-text_i_matrix)).mean()
-
-    total_loss= positive_loss_image + negative_loss_image + positive_loss_text + negative_loss_text
-
-    return total_loss/2
-
 #https://github.com/openai/CLIP/issues/57 error using Adam optimizer
 def convert_models_to_fp32(model): 
     for p in model.parameters(): 
@@ -116,6 +80,50 @@ def main(args):
     CE_loss = nn.CrossEntropyLoss()
     contrastive_loss = losses.ContrastiveLoss(pos_margin=0.0, neg_margin=1)
 
+    def CE_loss_logsoftmax(preds, targets, reduction='none'):
+        log_softmax = nn.LogSoftmax(dim=-1)
+        loss = (-targets * log_softmax(preds)).sum(1)
+        if reduction == "none":
+            return loss
+        elif reduction == "mean":
+            return loss.mean()
+        
+    def contrastive_loss(logits_per_image, logits_per_text, margin=1.0):
+        #这个结果很差：猜测可能是前五个的similarities结果并不好并不是positive，similarities are closed 
+        # distance_per_image = margin - logits_per_image
+        # distance_per_text = margin - logits_per_text
+
+        # distance_per_image,_ = torch.sort(distance_per_image, dim=1, descending=False)
+        # distance_per_text,_ = torch.sort(distance_per_text, dim=1, descending=False)
+        
+        # #print(distance_per_image)
+        # # [0.6895, 0.6982, 0.7227,  ..., 0.9053, 0.9058, 0.9399] similarities are closed 
+
+        # # loss of the positive pairs
+        # positive_loss_image = distance_per_image[:, :5].mean()
+        # positive_loss_text = distance_per_text[:, :1].mean()
+
+        # # loss of the negative pairs
+        # negative_loss_image = F.relu(margin - logits_per_image[:, 5:]).mean()
+        # negative_loss_text = F.relu(margin - logits_per_text[:, 1:]).mean()
+
+
+        text_i_matrix = torch.eye(len(logits_per_image)).repeat_interleave(5,dim=0).to(device)
+        image_i_matrix = torch.transpose(text_i_matrix, 0, 1).to(device)
+
+        distance_per_image = margin - logits_per_image
+        distance_per_text = margin - logits_per_text
+
+        positive_loss_image = (distance_per_image * image_i_matrix).mean()
+        positive_loss_text = (distance_per_text * text_i_matrix).mean()
+
+        negative_loss_image = F.relu(distance_per_image * (1-image_i_matrix)).mean()
+        negative_loss_text = F.relu(distance_per_text * (1-text_i_matrix)).mean()
+
+        total_loss= positive_loss_image + negative_loss_image + positive_loss_text + negative_loss_text
+
+        return total_loss/2
+
     #https://github.com/openai/CLIP/issues/57
     def convert_models_to_fp32(model): 
         for p in model.parameters(): 
@@ -153,6 +161,17 @@ def main(args):
             logits_per_image = (image_encodings @ text_encodings.T)/ temperature
             logits_per_text = logits_per_image.T
             
+            if args.loss == "logsoftmax" :
+                images_similarity = image_encodings @ image_encodings.T
+                texts_similarity = text_encodings @ text_encodings.T
+                targets = F.softmax(
+                    (images_similarity + texts_similarity) / 2 , dim=-1
+                )
+                texts_loss = CE_loss_logsoftmax(logits_per_text, targets, reduction='none')
+                images_loss = CE_loss_logsoftmax(logits_per_image, targets.T, reduction='none')
+                loss =  (images_loss + texts_loss) / 2.0 # shape: (batch_size)
+                loss.mean()
+
             if args.loss == "cross_entropy" :
                 targets = torch.arange(len(images),dtype=torch.long, device=device)
 
@@ -162,7 +181,6 @@ def main(args):
 
             if args.loss == "contrastive" :
                 
-                #使用pytorch_metric_learning库结果和我自己写的第一个一样很差，猜测可能是相似值过于靠近
                 targets = torch.arange(len(images))
 
                 image_loss = contrastive_loss(logits_per_image , targets)

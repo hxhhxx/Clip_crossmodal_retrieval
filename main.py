@@ -12,6 +12,7 @@ from Datasets.Flickr30k import Flickr30k
 from torch.utils.data import DataLoader
 import Evaluation
 import parser
+import itertools
 
 def split_dataset(args, preprocess, target_transform):
     if args.dataset == "flickr":
@@ -31,17 +32,64 @@ def split_dataset(args, preprocess, target_transform):
 
     return  train_dataset, val_dataset ,test_dataset
 
-# new projection layer
+# projection layer
 class proj_layer(nn.Module):
     def __init__(self, clips_model):
         super().__init__()
         self.text_proj = clips_model.text_projection
         self.image_proj = clips_model.visual.proj
+
     def forward(self, image: torch.Tensor, text: torch.Tensor):
         image_features = image @ self.image_proj
         text_features = text @ self.text_proj
         return image_features, text_features
 
+class new_image_projection(nn.Module):
+    def __init__(
+        self,
+        clips_model,
+        projection_dim=256,
+        dropout=0.1
+    ):
+        super().__init__()
+        self.projection = clips_model.visual.proj
+        self.gelu = nn.GELU()
+        self.fc = nn.Linear(projection_dim, projection_dim)
+        self.dropout = nn.Dropout(dropout)
+        self.layer_norm = nn.LayerNorm(projection_dim)
+    
+    def forward(self, x):
+        projected = self.projection(x)
+        x = self.gelu(projected)
+        x = self.fc(x)
+        x = self.dropout(x)
+        x = x + projected
+        x = self.layer_norm(x)
+        return x
+    
+class new_text_projection(nn.Module):
+    def __init__(
+        self,
+        clips_model,
+        projection_dim=256,
+        dropout=0.1
+    ):
+        super().__init__()
+        self.projection = clips_model.text_projection
+        self.gelu = nn.GELU()
+        self.fc = nn.Linear(projection_dim, projection_dim)
+        self.dropout = nn.Dropout(dropout)
+        self.layer_norm = nn.LayerNorm(projection_dim)
+    
+    def forward(self, x):
+        projected = self.projection(x)
+        x = self.gelu(projected)
+        x = self.fc(x)
+        x = self.dropout(x)
+        x = x + projected
+        x = self.layer_norm(x)
+        return x
+    
 #https://github.com/openai/CLIP/issues/57 error using Adam optimizer
 def convert_models_to_fp32(model): 
     for p in model.parameters(): 
@@ -67,15 +115,27 @@ def main(args):
     train_Loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=False)
     val_loader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, shuffle=False)
 
+    #change the new projection inside the model
+    
+    new_image_projection =  new_image_projection(clips_model=model)
+    new_text_projection = new_text_projection(clips_model=model)
+
+    model.visual.proj = new_image_projection
+    model.text_projection = new_text_projection
+
     for param in model.parameters():
         param.requires_grad = False
-    
+        
     model.text_projection.requires_grad = True
     model.visual.proj.requires_grad = True
 
     trainable_params = [p for p in model.parameters() if p.requires_grad]
-    #proj = proj_layer(model)
-    optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98),eps=1e-6,weight_decay=0.2)
+    
+    optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98), eps=1e-6,weight_decay=1e-3)
+    #optimizer = optim.AdamW(trainable_params, lr=args.lr, weight_decay=1e-3)
+    # lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+    #     optimizer, mode="min", patience=1, factor=0.8
+    # )   
 
     CE_loss = nn.CrossEntropyLoss()
     contrastive_loss = losses.ContrastiveLoss(pos_margin=0.0, neg_margin=1)
@@ -151,7 +211,7 @@ def main(args):
             
             #encoding & cosine similarity as logits       
             image_encodings = model.encode_image(images)
-            text_encodings = model.encode_text(texts)
+            text_encodings = model.encode_text(texts)           
             
             # Normalise 
             image_encodings = image_encodings / image_encodings.norm(dim=-1, keepdim=True)
@@ -195,6 +255,7 @@ def main(args):
 
             if device == "cpu":
                 optimizer.step()
+                
             else : 
                 convert_models_to_fp32(model)
                 optimizer.step()

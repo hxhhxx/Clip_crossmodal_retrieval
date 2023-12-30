@@ -116,11 +116,11 @@ def main(args):
 
     #change the new projection inside the model
     
-    new_image_projection =  new_image_projection(clips_model=model)
-    new_text_projection = new_text_projection(clips_model=model)
+    image_projection =  new_image_projection(clips_model=model, projection_dim=256, dropout=0.1)
+    text_projection = new_text_projection(clips_model=model, projection_dim=256, dropout=0.1)
 
-    model.visual.proj = new_image_projection
-    model.text_projection = new_text_projection
+    model.visual.proj = image_projection
+    model.text_projection = text_projection
 
     for param in model.parameters():
         param.requires_grad = False

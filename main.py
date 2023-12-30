@@ -12,7 +12,6 @@ from Datasets.Flickr30k import Flickr30k
 from torch.utils.data import DataLoader
 import Evaluation
 import parser
-import itertools
 
 def split_dataset(args, preprocess, target_transform):
     if args.dataset == "flickr":

@@ -170,7 +170,7 @@ def main(args):
                 texts_loss = CE_loss_logsoftmax(logits_per_text, targets, reduction='none')
                 images_loss = CE_loss_logsoftmax(logits_per_image, targets.T, reduction='none')
                 loss =  (images_loss + texts_loss) / 2.0 # shape: (batch_size)
-                loss.mean()
+                #loss.mean()
 
             if args.loss == "cross_entropy" :
                 targets = torch.arange(len(images),dtype=torch.long, device=device)

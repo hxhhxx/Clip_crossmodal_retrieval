@@ -97,8 +97,8 @@ def main(args):
 
     if args.trainable == "new_projection":
     
-        image_projection =  new_projection(embedding_dim=768, projection_dim=77, dropout=0.1)
-        text_projection = new_projection(embedding_dim=77, projection_dim=77, dropout=0.1)
+        image_projection =  new_projection(width=768, projection_dim=77, dropout=0.1)
+        text_projection = new_projection(width=77, projection_dim=77, dropout=0.1)
         
         model.text_projection = None
         model.visual.proj = None

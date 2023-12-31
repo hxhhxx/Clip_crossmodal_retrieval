@@ -106,8 +106,9 @@ def main(args):
         for param in model.parameters():
             param.requires_grad = False
 
-        trainable_params = [ itertools.chain(
-            image_projection.parameters(), text_projection.parameters())]
+        trainable_params = [ {"trainable_params": image_projection.parameters()},
+                            {"trainable_params": text_projection.parameters()}
+        ]
 
     if args.trainable == "linear_projection":
 

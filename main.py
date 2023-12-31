@@ -100,8 +100,8 @@ def main(args):
         image_projection =  new_projection(width=768, output_dim=77, dropout=0.1)
         text_projection = new_projection(width=77, output_dim=77, dropout=0.1)
         
-        model.text_projection = None
-        model.visual.proj = None
+        model.text_projection = nn.Sequential()
+        model.visual.proj = nn.Sequential()
 
         for param in model.parameters():
             param.requires_grad = False

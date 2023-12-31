@@ -12,6 +12,7 @@ from Datasets.Flickr30k import Flickr30k
 from torch.utils.data import DataLoader
 import Evaluation
 import parser
+import itertools
 
 def split_dataset(args, preprocess, target_transform):
     if args.dataset == "flickr":
@@ -43,42 +44,19 @@ class proj_layer(nn.Module):
         text_features = text @ self.text_proj
         return image_features, text_features
 
-class new_image_projection(nn.Module):
+class new_projection(nn.Module):
     def __init__(
         self,
-        clips_model,
-        projection_dim=256,
+        width,
+        output_dim,
         dropout=0.1
     ):
         super().__init__()
-        self.projection = clips_model.visual.proj
+        self.projection = nnn.Linear(width, output_dim)
         self.gelu = nn.GELU()
-        self.fc = nn.Linear(projection_dim, projection_dim)
+        self.fc = nn.Linear(output_dim, output_dim)
         self.dropout = nn.Dropout(dropout)
-        self.layer_norm = nn.LayerNorm(projection_dim)
-    
-    def forward(self, x):
-        projected = self.projection(x)
-        x = self.gelu(projected)
-        x = self.fc(x)
-        x = self.dropout(x)
-        x = x + projected
-        x = self.layer_norm(x)
-        return x
-    
-class new_text_projection(nn.Module):
-    def __init__(
-        self,
-        clips_model,
-        projection_dim=256,
-        dropout=0.1
-    ):
-        super().__init__()
-        self.projection = clips_model.text_projection
-        self.gelu = nn.GELU()
-        self.fc = nn.Linear(projection_dim, projection_dim)
-        self.dropout = nn.Dropout(dropout)
-        self.layer_norm = nn.LayerNorm(projection_dim)
+        self.layer_norm = nn.LayerNorm(output_dim)
     
     def forward(self, x):
         projected = self.projection(x)
@@ -114,27 +92,48 @@ def main(args):
     train_Loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=False)
     val_loader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, shuffle=False)
 
-    #change the new projection inside the model
+    ####################################
+    #change the projection inside the model
+
+    if args.trainable == "new_projection":
     
-    image_projection =  new_image_projection(clips_model=model, projection_dim=256, dropout=0.1)
-    text_projection = new_text_projection(clips_model=model, projection_dim=256, dropout=0.1)
-
-    model.visual.proj = image_projection
-    model.text_projection = text_projection
-
-    for param in model.parameters():
-        param.requires_grad = False
+        image_projection =  new_projection(embedding_dim=768, projection_dim=77, dropout=0.1)
+        text_projection = new_projection(embedding_dim=77, projection_dim=77, dropout=0.1)
         
-    model.text_projection.requires_grad = True
-    model.visual.proj.requires_grad = True
+        model.text_projection = None
+        model.visual.proj = None
 
-    trainable_params = [p for p in model.parameters() if p.requires_grad]
-    
+        for param in model.parameters():
+            param.requires_grad = False
+
+        trainable_params = [ itertools.chain(
+            image_projection.parameters(), text_projection.parameters())]
+
+    if args.trainable == "linear_projection":
+
+        for param in model.parameters():
+            param.requires_grad = False
+            
+        model.text_projection.requires_grad = True
+        model.visual.proj.requires_grad = True
+
+        trainable_params = [p for p in model.parameters() if p.requires_grad]
+
+    if args.trainable == "all":
+
+        trainable_params = [p for p in model.parameters() if p.requires_grad]
+
+    ######################################
+    #Optimizer
+         
     optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98), eps=1e-6,weight_decay=1e-3)
     #optimizer = optim.AdamW(trainable_params, lr=args.lr, weight_decay=1e-3)
     # lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
     #     optimizer, mode="min", patience=1, factor=0.8
-    # )   
+    # )
+       
+    ######################################
+    #Loss function 
 
     CE_loss = nn.CrossEntropyLoss()
     contrastive_loss = losses.ContrastiveLoss(pos_margin=0.0, neg_margin=1)
@@ -147,41 +146,6 @@ def main(args):
         elif reduction == "mean":
             return loss.mean()
         
-    def contrastive_loss(logits_per_image, logits_per_text, margin=1.0):
-        #这个结果很差：猜测可能是前五个的similarities结果并不好并不是positive，similarities are closed 
-        # distance_per_image = margin - logits_per_image
-        # distance_per_text = margin - logits_per_text
-
-        # distance_per_image,_ = torch.sort(distance_per_image, dim=1, descending=False)
-        # distance_per_text,_ = torch.sort(distance_per_text, dim=1, descending=False)
-        
-        # #print(distance_per_image)
-        # # [0.6895, 0.6982, 0.7227,  ..., 0.9053, 0.9058, 0.9399] similarities are closed 
-
-        # # loss of the positive pairs
-        # positive_loss_image = distance_per_image[:, :5].mean()
-        # positive_loss_text = distance_per_text[:, :1].mean()
-
-        # # loss of the negative pairs
-        # negative_loss_image = F.relu(margin - logits_per_image[:, 5:]).mean()
-        # negative_loss_text = F.relu(margin - logits_per_text[:, 1:]).mean()
-
-
-        text_i_matrix = torch.eye(len(logits_per_image)).repeat_interleave(5,dim=0).to(device)
-        image_i_matrix = torch.transpose(text_i_matrix, 0, 1).to(device)
-
-        distance_per_image = margin - logits_per_image
-        distance_per_text = margin - logits_per_text
-
-        positive_loss_image = (distance_per_image * image_i_matrix).mean()
-        positive_loss_text = (distance_per_text * text_i_matrix).mean()
-
-        negative_loss_image = F.relu(distance_per_image * (1-image_i_matrix)).mean()
-        negative_loss_text = F.relu(distance_per_text * (1-text_i_matrix)).mean()
-
-        total_loss= positive_loss_image + negative_loss_image + positive_loss_text + negative_loss_text
-
-        return total_loss/2
 
     #https://github.com/openai/CLIP/issues/57
     def convert_models_to_fp32(model): 
@@ -190,6 +154,9 @@ def main(args):
                 p.data = p.data.float() 
                 p.grad.data = p.grad.data.float() 
 
+    ##################################################
+    #epoch start
+                
     for epoch in range(args.num_epoch):
         total_loss = 0
 
@@ -210,8 +177,12 @@ def main(args):
             
             #encoding & cosine similarity as logits       
             image_encodings = model.encode_image(images)
-            text_encodings = model.encode_text(texts)           
-            
+            text_encodings = model.encode_text(texts)
+
+            if args.trainable == "new_projection":
+                image_encodings = image_projection(image_encodings)
+                text_encodings = text_projection(text_encodings)
+       
             # Normalise 
             image_encodings = image_encodings / image_encodings.norm(dim=-1, keepdim=True)
             text_encodings = text_encodings / text_encodings.norm(dim=-1, keepdim=True)
@@ -220,6 +191,8 @@ def main(args):
             logits_per_image = (image_encodings @ text_encodings.T)/ temperature
             logits_per_text = logits_per_image.T
             
+            ##############################################
+            #Change the loss function
             if args.loss == "logsoftmax" :
                 images_similarity = image_encodings @ image_encodings.T
                 texts_similarity = text_encodings @ text_encodings.T

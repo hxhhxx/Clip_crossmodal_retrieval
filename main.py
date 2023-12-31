@@ -52,7 +52,7 @@ class new_projection(nn.Module):
         dropout=0.1
     ):
         super().__init__()
-        self.projection = nnn.Linear(width, output_dim)
+        self.projection = nn.Linear(width, output_dim)
         self.gelu = nn.GELU()
         self.fc = nn.Linear(output_dim, output_dim)
         self.dropout = nn.Dropout(dropout)

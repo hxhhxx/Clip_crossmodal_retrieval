@@ -102,6 +102,7 @@ def main(args):
         embed_dim = state_dict["text_projection"].shape[1]
         #print(embed_dim) #512 in b/32
         added_layer = ProjectionHead(embed_dim).to(device)
+        clip.model.convert_weights(added_layer)
 
         trainable_params = [p for p in added_layer.parameters() if p.requires_grad] 
 
@@ -171,7 +172,7 @@ def main(args):
 
             #print(image_encodings.shape)
             #print(text_encodings.shape) #torch.Size([16, 512]) in b/32
-            print(image_encodings.dtype)
+            #print(image_encodings.dtype) #torch.float16
 
             if args.trainable == "new_layer":
                 image_encodings = added_layer(image_encodings)
@@ -217,6 +218,7 @@ def main(args):
                 
             else : 
                 convert_models_to_fp32(model)
+                convert_models_to_fp32(added_layer)
                 optimizer.step()
                 clip.model.convert_weights(model)
 

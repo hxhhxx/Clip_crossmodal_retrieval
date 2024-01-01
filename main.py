@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 import torch.optim as optim
-from pytorch_metric_learning import losses
 import clip
 from torch.utils.data import random_split
 from Datasets.Flickr30k import Flickr30k
@@ -40,12 +39,10 @@ class ProjectionHead(nn.Module):
         super().__init__()
         self.gelu = nn.GELU()
         self.dropout = nn.Dropout(0.1)
-        self.layer_norm = nn.LayerNorm(512)
     
     def forward(self, x):
         x = self.gelu(x)
         x = self.dropout(x)
-        x = self.layer_norm(x)
         return x
 
 class CustomCLIPModel(nn.Module):
@@ -131,7 +128,6 @@ def main(args):
     #Loss function 
 
     CE_loss = nn.CrossEntropyLoss()
-    contrastive_loss = losses.ContrastiveLoss(pos_margin=0.0, neg_margin=1)
         
     def soft_cross_entropy(teacher_logits, student_logits):
         return -(teacher_logits.softmax(dim=1) * student_logits.log_softmax(dim=1)).sum(dim=1).mean()

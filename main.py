@@ -32,40 +32,26 @@ def split_dataset(args, preprocess, target_transform):
 
     return  train_dataset, val_dataset ,test_dataset
 
-# projection layer
-class proj_layer(nn.Module):
-    def __init__(self, clips_model):
-        super().__init__()
-        self.text_proj = clips_model.text_projection
-        self.image_proj = clips_model.visual.proj
+# Added layer
 
-    def forward(self, image: torch.Tensor, text: torch.Tensor):
-        image_features = image @ self.image_proj
-        text_features = text @ self.text_proj
-        return image_features, text_features
+class CustomCLIPModel(nn.Module):
+    def __init__(self, clip_model, num_classes):
+        super(CustomCLIPModel, self).__init__()
+        self.clip_model = clip_model
+        # ViT-B/32 clip_model outputs features of size 512
+        self.additional_layers = nn.Sequential(
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(256, num_classes)
+        )
 
-class new_projection(nn.Module):
-    def __init__(
-        self,
-        width,
-        output_dim,
-        dropout=0.1
-    ):
-        super().__init__()
-        self.projection = nn.Linear(width, output_dim)
-        self.gelu = nn.GELU()
-        self.fc = nn.Linear(output_dim, output_dim)
-        self.dropout = nn.Dropout(dropout)
-        self.layer_norm = nn.LayerNorm(output_dim)
-    
     def forward(self, x):
-        projected = self.projection(x)
-        x = self.gelu(projected)
-        x = self.fc(x)
-        x = self.dropout(x)
-        x = x + projected
-        x = self.layer_norm(x)
-        return x
+        # Get features from CLIP
+        features = self.clip_model.encode_image(x)
+        # Pass features through additional layers
+        return self.additional_layers(features)
+
     
 #https://github.com/openai/CLIP/issues/57 error using Adam optimizer
 def convert_models_to_fp32(model): 
@@ -97,17 +83,14 @@ def main(args):
 
     if args.trainable == "new_projection":
     
-        image_projection =  new_projection(width=768, output_dim=512, dropout=0.1)
-        text_projection = new_projection(width=77, output_dim=512, dropout=0.1)
-        
-        model.text_projection.data = torch.zeros_like(model.text_projection)
-        model.visual.proj.data = torch.zeros_like(model.text_projection)
-
+        # Freeze CLIP model parameters
         for param in model.parameters():
             param.requires_grad = False
 
-        trainable_params = [p for p in image_projection.parameters() if p.requires_grad] + \
-                   [p for p in text_projection.parameters() if p.requires_grad]
+        # Create custom model
+        custom_model = CustomCLIPModel(model, num_classes=256)
+
+        trainable_params = [p for p in custom_model.parameters() if p.requires_grad] 
 
     if args.trainable == "linear_projection":
 

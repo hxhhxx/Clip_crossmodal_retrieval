@@ -97,8 +97,8 @@ def main(args):
 
     if args.trainable == "new_projection":
     
-        image_projection =  new_projection(width=768, output_dim=77, dropout=0.1)
-        text_projection = new_projection(width=77, output_dim=77, dropout=0.1)
+        image_projection =  new_projection(width=768, output_dim=512, dropout=0.1)
+        text_projection = new_projection(width=77, output_dim=512, dropout=0.1)
         
         model.text_projection.data = torch.zeros_like(model.text_projection)
         model.visual.proj.data = torch.zeros_like(model.text_projection)
@@ -173,24 +173,24 @@ def main(args):
             texts = texts.to(device)
 
             #encoding & cosine similarity as logits       
-            #logits_per_image, logits_per_text = model(images, texts)
+            logits_per_image, logits_per_text = model(images, texts)
             
             #encoding & cosine similarity as logits       
-            image_encodings = model.encode_image(images)
-            text_encodings = model.encode_text(texts)
+            # image_encodings = model.encode_image(images)
+            # text_encodings = model.encode_text(texts)
 
-            if args.trainable == "new_projection":
-                image_encodings = image_projection(image_encodings)
-                text_encodings = text_projection(text_encodings)
-       
-            # Normalise 
-            image_encodings = image_encodings / image_encodings.norm(dim=-1, keepdim=True)
-            text_encodings = text_encodings / text_encodings.norm(dim=-1, keepdim=True)
+            # if args.trainable == "new_projection":
+            #     image_encodings = image_projection(image_encodings)
+            #     text_encodings = text_projection(text_encodings)
+        
+            # # Normalise 
+            # image_encodings = image_encodings / image_encodings.norm(dim=-1, keepdim=True)
+            # text_encodings = text_encodings / text_encodings.norm(dim=-1, keepdim=True)
 
-            temperature = 0.07
-            logits_per_image = (image_encodings @ text_encodings.T)/ temperature
-            logits_per_text = logits_per_image.T
-            
+            # temperature = 0.07
+            # logits_per_image = (image_encodings @ text_encodings.T)/ temperature
+            # logits_per_text = logits_per_image.T
+                
             ##############################################
             #Change the loss function
             if args.loss == "logsoftmax" :

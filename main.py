@@ -126,7 +126,7 @@ def main(args):
     ######################################
     #Optimizer
          
-    optimizer = optim.AdamW(trainable_params, lr=args.lr, betas=(0.9,0.98), eps=1e-6,weight_decay=1e-3)
+    optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98), eps=1e-6,weight_decay=1e-3)
     #optimizer = optim.AdamW(trainable_params, lr=args.lr, weight_decay=1e-3)
     # lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
     #     optimizer, mode="min", patience=1, factor=0.8

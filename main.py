@@ -169,6 +169,9 @@ def main(args):
             image_encodings = model.encode_image(images)
             text_encodings = model.encode_text(texts)
 
+            print(image_encodings.shape)
+            print(text_encodings.shape)
+
             if args.trainable == "new_layer":
                 image_encodings = added_layer(image_encodings)
                 text_encodings = added_layer(text_encodings)

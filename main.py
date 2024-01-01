@@ -100,6 +100,7 @@ def main(args):
         # Create custom model
         state_dict = model.state_dict()
         embed_dim = state_dict["text_projection"].shape[1]
+        print(embed_dim)
         added_layer = ProjectionHead(embed_dim).to(device)
 
         trainable_params = [p for p in added_layer.parameters() if p.requires_grad] 

@@ -217,8 +217,10 @@ def main(args):
                 optimizer.step()
                 
             else : 
-                convert_models_to_fp32(model)
-                convert_models_to_fp32(added_layer)
+                if args.trainable == "new_layer":
+                    convert_models_to_fp32(added_layer)
+                else :
+                    convert_models_to_fp32(model)
                 optimizer.step()
                 clip.model.convert_weights(model)
 

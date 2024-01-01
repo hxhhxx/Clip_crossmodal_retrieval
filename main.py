@@ -101,7 +101,7 @@ def main(args):
     if args.trainable == "new_layer":
 
         # Create custom model
-        added_layer = ProjectionHead(projection_dim=256)
+        added_layer = ProjectionHead(projection_dim=256).to(device)
 
         trainable_params = [p for p in added_layer.parameters() if p.requires_grad] 
 

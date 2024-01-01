@@ -10,7 +10,7 @@ def parse_arguments():
 
     #model&training
     parser.add_argument('--model', default="ViT-B/32",help="Choose the model of convert")
-    parser.add_argument("--trainable", default="linear", help="Loss of the model")
+    parser.add_argument("--trainable", default="linear_projection", help="Loss of the model")
     parser.add_argument("--loss", default="cross_entropy", help="Loss of the model")
  
     # datasets parameters

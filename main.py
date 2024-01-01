@@ -126,7 +126,7 @@ def main(args):
     ######################################
     #Optimizer
          
-    optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98), eps=1e-6,weight_decay=1e-3)
+    optimizer = optim.AdamW(trainable_params, lr=args.lr, betas=(0.9,0.98), eps=1e-6,weight_decay=1e-3)
     #optimizer = optim.AdamW(trainable_params, lr=args.lr, weight_decay=1e-3)
     # lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
     #     optimizer, mode="min", patience=1, factor=0.8
@@ -137,14 +137,9 @@ def main(args):
 
     CE_loss = nn.CrossEntropyLoss()
     contrastive_loss = losses.ContrastiveLoss(pos_margin=0.0, neg_margin=1)
-
-    def CE_loss_logsoftmax(preds, targets, reduction='none'):
-        log_softmax = nn.LogSoftmax(dim=-1)
-        loss = (-targets * log_softmax(preds)).sum(1)
-        if reduction == "none":
-            return loss
-        elif reduction == "mean":
-            return loss.mean()
+        
+    def soft_cross_entropy(teacher_logits, student_logits):
+        return -(teacher_logits.softmax(dim=1) * student_logits.log_softmax(dim=1)).sum(dim=1).mean()
         
 
     #https://github.com/openai/CLIP/issues/57
@@ -193,16 +188,13 @@ def main(args):
                 
             ##############################################
             #Change the loss function
-            if args.loss == "logsoftmax" :
-                images_similarity = image_encodings @ image_encodings.T
-                texts_similarity = text_encodings @ text_encodings.T
-                targets = F.softmax(
-                    (images_similarity + texts_similarity) / 2 , dim=-1
-                )
-                texts_loss = CE_loss_logsoftmax(logits_per_text, targets, reduction='none')
-                images_loss = CE_loss_logsoftmax(logits_per_image, targets.T, reduction='none')
-                loss =  (images_loss + texts_loss) / 2.0 # shape: (batch_size)
-                #loss.mean()
+            if args.loss == "soft_cross_entropy":
+                teacher_logits_image = logits_per_image @ logits_per_image.T
+                teacher_logits_text = logits_per_text @ logits_per_text.T
+
+                image_loss = soft_cross_entropy(teacher_logits_image, logits_per_image)
+                text_loss = soft_cross_entropy(teacher_logits_text, logits_per_text)
+                loss = (image_loss + text_loss) / 2
 
             if args.loss == "cross_entropy" :
                 targets = torch.arange(len(images),dtype=torch.long, device=device)

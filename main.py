@@ -34,13 +34,16 @@ def split_dataset(args, preprocess, target_transform):
 # Added layer
 class ProjectionHead(nn.Module):
     def __init__(
-        self
+        self,
+        embed_dim
     ):
         super().__init__()
+        self.linear = nn.Linear(embed_dim, 512)
         self.gelu = nn.GELU()
         self.dropout = nn.Dropout(0.1)
     
     def forward(self, x):
+        x = self.linear(x)
         x = self.gelu(x)
         x = self.dropout(x)
         return x
@@ -95,9 +98,9 @@ def main(args):
     if args.trainable == "new_layer":
 
         # Create custom model
-        # state_dict = model.state_dict()
-        # embed_dim = state_dict["text_projection"].shape[1]
-        added_layer = ProjectionHead().to(device)
+        state_dict = model.state_dict()
+        embed_dim = state_dict["text_projection"].shape[1]
+        added_layer = ProjectionHead(embed_dim).to(device)
 
         trainable_params = [p for p in added_layer.parameters() if p.requires_grad] 
 

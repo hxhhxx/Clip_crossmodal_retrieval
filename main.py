@@ -33,6 +33,26 @@ def split_dataset(args, preprocess, target_transform):
     return  train_dataset, val_dataset ,test_dataset
 
 # Added layer
+class ProjectionHead(nn.Module):
+    def __init__(
+        self,
+        projection_dim
+    ):
+        super().__init__()
+        self.projection = nn.Linear(512, projection_dim)
+        self.gelu = nn.GELU()
+        self.fc = nn.Linear(projection_dim, projection_dim)
+        self.dropout = nn.Dropout(0.1)
+        self.layer_norm = nn.LayerNorm(projection_dim)
+    
+    def forward(self, x):
+        projected = self.projection(x)
+        x = self.gelu(projected)
+        x = self.fc(x)
+        x = self.dropout(x)
+        x = x + projected
+        x = self.layer_norm(x)
+        return x
 
 class CustomCLIPModel(nn.Module):
     def __init__(self, clip_model, num_classes):
@@ -79,18 +99,14 @@ def main(args):
     val_loader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, shuffle=False)
 
     ####################################
-    #change the projection inside the model
+    #change the projection head inside the model
 
-    if args.trainable == "new_projection":
-    
-        # Freeze CLIP model parameters
-        for param in model.parameters():
-            param.requires_grad = False
+    if args.trainable == "new_layer":
 
         # Create custom model
-        custom_model = CustomCLIPModel(model, num_classes=256)
+        added_layer = ProjectionHead(projection_dim=256)
 
-        trainable_params = [p for p in custom_model.parameters() if p.requires_grad] 
+        trainable_params = [p for p in added_layer.parameters() if p.requires_grad] 
 
     if args.trainable == "linear_projection":
 
@@ -151,23 +167,19 @@ def main(args):
             texts = texts.to(device)
 
             #encoding & cosine similarity as logits       
-            logits_per_image, logits_per_text = model(images, texts)
+            #logits_per_image, logits_per_text = model(images, texts)
             
             #encoding & cosine similarity as logits       
-            # image_encodings = model.encode_image(images)
-            # text_encodings = model.encode_text(texts)
+            image_encodings = model.encode_image(images)
+            text_encodings = model.encode_text(texts)
 
-            # if args.trainable == "new_projection":
-            #     image_encodings = image_projection(image_encodings)
-            #     text_encodings = text_projection(text_encodings)
-        
-            # # Normalise 
-            # image_encodings = image_encodings / image_encodings.norm(dim=-1, keepdim=True)
-            # text_encodings = text_encodings / text_encodings.norm(dim=-1, keepdim=True)
+            if args.trainable == "new_layer":
+                image_encodings = added_layer(image_encodings)
+                text_encodings = added_layer(text_encodings)
 
-            # temperature = 0.07
-            # logits_per_image = (image_encodings @ text_encodings.T)/ temperature
-            # logits_per_text = logits_per_image.T
+            temperature = 0.07
+            logits_per_image = (image_encodings @ text_encodings.t()) / temperature
+            logits_per_text = logits_per_image.T
                 
             ##############################################
             #Change the loss function

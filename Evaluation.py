@@ -1,11 +1,13 @@
 import torch
 import numpy as np
 from typing import List
+import parser
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Encodes all text and images in a dataset
-def encode_dataset(clip,  eva_Loader, batch_size = 16):
+def encode_dataset(clip, eva_Loader, batch_size = 16):
+    args = parser.parse_arguments()
 
     with torch.no_grad():
         #  gives the corresponding text indices for the ith image and text
@@ -44,8 +46,13 @@ def encode_dataset(clip,  eva_Loader, batch_size = 16):
             # 16 x 5 x 77 -> 80 x 77
             # 16 x image(3*224*224)???
             text = torch.flatten(text, start_dim=0, end_dim=1)
-            image_encodings.append(clip.encode_image(images))
-            text_encodings.append(clip.encode_text(text))
+            if args.trainable == "new_layer":
+                image_features, text_features = clip(images, text)
+                image_encodings.append(image_features)
+                text_encodings.append(text_features)
+            else:
+                image_encodings.append(clip.encode_image(images))
+                text_encodings.append(clip.encode_text(text))
 
         image_encodings = torch.cat(image_encodings)
         text_encodings = torch.cat(text_encodings)

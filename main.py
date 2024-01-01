@@ -100,7 +100,7 @@ def main(args):
         # Create custom model
         state_dict = model.state_dict()
         embed_dim = state_dict["text_projection"].shape[1]
-        print(embed_dim)
+        #print(embed_dim) #512 in b/32
         added_layer = ProjectionHead(embed_dim).to(device)
 
         trainable_params = [p for p in added_layer.parameters() if p.requires_grad] 
@@ -169,8 +169,9 @@ def main(args):
             image_encodings = model.encode_image(images)
             text_encodings = model.encode_text(texts)
 
-            print(image_encodings.shape)
-            print(text_encodings.shape)
+            #print(image_encodings.shape)
+            #print(text_encodings.shape) #torch.Size([16, 512]) in b/32
+            print(image_encodings.dtype)
 
             if args.trainable == "new_layer":
                 image_encodings = added_layer(image_encodings)

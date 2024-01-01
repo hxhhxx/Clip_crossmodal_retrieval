@@ -64,7 +64,7 @@ class CustomCLIPModel(nn.Module):
     def forward(self, image, text):
         # Get features from CLIP
         image_features = self.clip_model.encode_image(image)
-        text_features = self.clip_model.encode_image(text)
+        text_features = self.clip_model.encode_text(text)
         # Pass features through additional layers
         image_features = self.additional_layers(image_features)
         text_features = self.additional_layers(text_features)

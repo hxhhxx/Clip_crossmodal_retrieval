@@ -125,9 +125,9 @@ def main(args):
          
     optimizer = optim.AdamW(trainable_params, lr=args.lr, betas=(0.9,0.98), eps=1e-6,weight_decay=1e-3)
     #optimizer = optim.AdamW(trainable_params, lr=args.lr, weight_decay=1e-3)
-    # lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-    #     optimizer, mode="min", patience=1, factor=0.8
-    # )
+    lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+         optimizer, mode="min", patience=1, factor=0.8
+    )
        
     ######################################
     #Loss function define (change inside the epoch)
@@ -200,23 +200,23 @@ def main(args):
             
             loss.backward()
 
-            total_loss += loss
+            total_loss += loss.item()
 
-            if device == "cpu":
-                optimizer.step()
+            optimizer.step()
+
+            # if device == "cpu":
+            #     optimizer.step()
                 
-            else : 
-                if args.trainable == "new_layer":
-                    convert_models_to_fp32(new_model)
-                else :
-                    convert_models_to_fp32(model)
-                optimizer.step()
-                clip.model.convert_weights(model)
-                if args.trainable == "new_layer":
-                    clip.model.convert_weights(new_model)
+            # else : 
+            #     if args.trainable == "new_layer":
+            #         convert_models_to_fp32(new_model)
+            #     else :
+            #         convert_models_to_fp32(model)
+            #     optimizer.step()
+            #     clip.model.convert_weights(model)
+            #     if args.trainable == "new_layer":
+            #         clip.model.convert_weights(new_model)
 
-        avg_loss = total_loss / len(train_Loader)
-        print(f"Epoch {epoch+1}/{args.num_epoch} has done, Average Loss: {avg_loss}")
 
         if args.trainable == "new_layer":
             new_model.eval()
@@ -226,6 +226,43 @@ def main(args):
             model.eval()
             print("start to evaluate")
             Evaluation.metrics_at_k(model, val_loader, k_vals= k_vals, batch_size=16)
+        total_val_loss = 0
+        with torch.no_grad():
+            print(f"Epoch {epoch+1}/{args.num_epoch} - Validation")
+
+            for images, texts in tqdm(val_loader):
+                images = images.to(device)
+                texts = texts.to(device)
+                #encoding & cosine similarity as logits       
+                #logits_per_image, logits_per_text = model(images, texts)
+
+                #encoding & cosine similarity as logits 
+                if args.trainable == "new_layer":
+                    image_encodings, text_encodings = new_model(images, texts)
+                else :                 
+                    image_encodings = model.encode_image(images)
+                    text_encodings = model.encode_text(texts)
+
+                temperature = 0.07
+                logits_per_image = (image_encodings @ text_encodings.t()) / temperature
+                logits_per_text = logits_per_image.T
+
+                if args.loss == "cross_entropy" :
+                    targets = torch.arange(len(images),dtype=torch.long, device=device)
+
+                    image_loss = CE_loss(logits_per_image, targets)
+                    text_loss  = CE_loss(logits_per_text, targets)
+                    val_loss = (image_loss + text_loss)/2
+
+                total_val_loss += val_loss.item()
+            
+        #######
+        avg_val_loss = total_val_loss / len(val_loader)
+        lr_scheduler.step(avg_val_loss)
+
+        avg_train_loss = total_loss / len(train_Loader)
+        print(f"Training Loss: {avg_train_loss:.4f}, Validation Loss: {avg_val_loss:.4f}")
+
 
 if __name__ == '__main__':
     args = parser.parse_arguments() #read the parameters from parser

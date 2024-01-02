@@ -266,7 +266,7 @@ def main(args):
             
         #######
         avg_val_loss = total_val_loss / len(val_loader)
-        lr_scheduler.step(avg_val_loss)
+        lr_scheduler.step()
 
         avg_train_loss = total_loss / len(train_Loader)
         print(f"Training Loss: {avg_train_loss:.4f}, Validation Loss: {avg_val_loss:.4f}")

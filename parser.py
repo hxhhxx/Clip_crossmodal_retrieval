@@ -6,7 +6,7 @@ def parse_arguments():
     parser.add_argument('--evaluate', action='store_true')
     parser.add_argument('--num_epoch', type=int, default="5",help="num of epoch") 
     parser.add_argument('--batch_size',type=int, default="16",help="Batch size of dataloader")     
-    parser.add_argument('--lr',type=float, default="1e-6",help="Optrimizer learning rate") 
+    parser.add_argument('--lr',type=float, default="1e-3",help="Optrimizer learning rate") 
 
     #model&training
     parser.add_argument('--model', default="ViT-B/32",help="Choose the model of convert")

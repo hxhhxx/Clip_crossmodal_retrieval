@@ -45,7 +45,7 @@ class ProjectionHead(nn.Module):
         embed_dim
     ):
         super().__init__()
-        self.linear = nn.Linear(embed_dim, 512)
+        self.linear = nn.Linear(embed_dim, 256)
         self.gelu = nn.GELU()
         self.dropout = nn.Dropout(0.1)
     

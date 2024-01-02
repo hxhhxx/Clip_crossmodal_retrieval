@@ -49,7 +49,7 @@ class ProjectionHead(nn.Module):
         self.gelu = nn.GELU()
         self.fc = nn.Linear(512, 512)
         self.dropout = nn.Dropout(0.1)
-        self.layer_norm = nn.LayerNorm(512, dtype=torch.float32)
+        self.layer_norm = nn.LayerNorm(512, dtype=torch.float16)
     
     def forward(self, x):
         x = self.linear(x)

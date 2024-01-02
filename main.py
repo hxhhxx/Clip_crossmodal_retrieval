@@ -47,16 +47,12 @@ class ProjectionHead(nn.Module):
         super().__init__()
         self.linear = nn.Linear(embed_dim, 512)
         self.gelu = nn.GELU()
-        self.fc = nn.Linear(512, 512)
         self.dropout = nn.Dropout(0.1)
-        self.layer_norm = nn.LayerNorm(512, dtype=torch.float16)
     
     def forward(self, x):
         x = self.linear(x)
         x = self.gelu(x)
-        x = self.fc(x)
         x = self.dropout(x)
-        x = self.layer_norm(x)
         return x
 
 class CustomCLIPModel(nn.Module):
@@ -210,13 +206,13 @@ def main(args):
                 optimizer.step()
                 
             else : 
-                # if args.trainable == "new_layer":
-                #     convert_models_to_fp32(new_model)
-                # else :
-                #     convert_models_to_fp32(model)
+                if args.trainable == "new_layer":
+                    convert_models_to_fp32(new_model)
+                else :
+                    convert_models_to_fp32(model)
                 optimizer.step()
-                # clip.model.convert_weights(model)
-                # clip.model.convert_weights(new_model)
+                clip.model.convert_weights(model)
+                clip.model.convert_weights(new_model)
 
         avg_loss = total_loss / len(train_Loader)
         print(f"Epoch {epoch+1}/{args.num_epoch} has done, Average Loss: {avg_loss}")

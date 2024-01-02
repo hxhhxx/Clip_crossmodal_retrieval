@@ -210,13 +210,13 @@ def main(args):
                 optimizer.step()
                 
             else : 
-                if args.trainable == "new_layer":
-                    convert_models_to_fp32(new_model)
-                else :
-                    convert_models_to_fp32(model)
+                # if args.trainable == "new_layer":
+                #     convert_models_to_fp32(new_model)
+                # else :
+                #     convert_models_to_fp32(model)
                 optimizer.step()
-                clip.model.convert_weights(model)
-                clip.model.convert_weights(new_model)
+                # clip.model.convert_weights(model)
+                # clip.model.convert_weights(new_model)
 
         avg_loss = total_loss / len(train_Loader)
         print(f"Epoch {epoch+1}/{args.num_epoch} has done, Average Loss: {avg_loss}")

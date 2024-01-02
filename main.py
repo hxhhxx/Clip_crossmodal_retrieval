@@ -212,7 +212,8 @@ def main(args):
                     convert_models_to_fp32(model)
                 optimizer.step()
                 clip.model.convert_weights(model)
-                clip.model.convert_weights(new_model)
+                if args.trainable == "new_layer":
+                    clip.model.convert_weights(new_model)
 
         avg_loss = total_loss / len(train_Loader)
         print(f"Epoch {epoch+1}/{args.num_epoch} has done, Average Loss: {avg_loss}")

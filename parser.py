@@ -12,6 +12,8 @@ def parse_arguments():
     parser.add_argument('--model', default="ViT-B/32",help="Choose the model of convert")
     parser.add_argument("--trainable", default="linear_projection", help="Loss of the model")
     parser.add_argument("--loss", default="cross_entropy", help="Loss of the model")
+    parser.add_argument("--scheduler", default="step", help="lr scheduler of the model")
+
  
     # datasets parameters
     parser.add_argument("--dataset", default="flickr", choices=["flickr", "coco"], help="Choose the dataset to process (flickr/coco)")

@@ -45,14 +45,18 @@ class ProjectionHead(nn.Module):
         embed_dim
     ):
         super().__init__()
-        self.linear = nn.Linear(embed_dim, 256)
+        self.linear = nn.Linear(embed_dim, 512)
         self.gelu = nn.GELU()
+        self.fc = nn.Linear(512, 512)
         self.dropout = nn.Dropout(0.1)
+        self.layer_norm = nn.LayerNorm(512)
     
     def forward(self, x):
         x = self.linear(x)
         x = self.gelu(x)
+        x = self.fc(x)
         x = self.dropout(x)
+        x = self.layer_norm(x)
         return x
 
 class CustomCLIPModel(nn.Module):

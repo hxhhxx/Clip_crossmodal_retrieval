@@ -126,7 +126,7 @@ def main(args):
     optimizer = optim.AdamW(trainable_params, lr=args.lr, betas=(0.9,0.98), eps=1e-6,weight_decay=1e-3)
     #optimizer = optim.AdamW(trainable_params, lr=args.lr, weight_decay=1e-3)
     lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-         optimizer, mode="min", patience=1, factor=0.8
+         optimizer, mode="min", patience=1, factor=0.6
     )
        
     ######################################
@@ -226,11 +226,17 @@ def main(args):
             model.eval()
             print("start to evaluate")
             Evaluation.metrics_at_k(model, val_loader, k_vals= k_vals, batch_size=16)
+
+
         total_val_loss = 0
         with torch.no_grad():
             print(f"Epoch {epoch+1}/{args.num_epoch} - Validation")
 
             for images, texts in tqdm(val_loader):
+                #texts: batch size x 77
+                random_indices = torch.randint(0, 5, (len(images),))
+                texts = torch.stack([texts[i, idx] for i, idx in enumerate(random_indices)])
+
                 images = images.to(device)
                 texts = texts.to(device)
                 #encoding & cosine similarity as logits       

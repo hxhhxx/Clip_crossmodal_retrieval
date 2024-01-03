@@ -11,7 +11,6 @@ from Datasets.Flickr30k import Flickr30k
 from torch.utils.data import DataLoader
 import Evaluation
 import parser
-import itertools
 
 def split_dataset(args, preprocess, target_transform):
     if args.dataset == "flickr":
@@ -163,19 +162,19 @@ def main(args):
             texts = texts.to(device)
 
             #encoding & cosine similarity as logits       
-            logits_per_image, logits_per_text = model(images, texts)
+            #logits_per_image, logits_per_text = model(images, texts)
 
             #encoding & cosine similarity as logits 
 
-            # if args.trainable == "new_layer":
-            #     image_encodings, text_encodings = new_model(images, texts)
-            # else :                 
-            #     image_encodings = model.encode_image(images)
-            #     text_encodings = model.encode_text(texts)
+            if args.trainable == "new_layer":
+                image_encodings, text_encodings = new_model(images, texts)
+            else :                 
+                image_encodings = model.encode_image(images)
+                text_encodings = model.encode_text(texts)
 
-            # temperature = 0.07
-            # logits_per_image = (image_encodings @ text_encodings.t()) / temperature
-            # logits_per_text = logits_per_image.T
+            temperature = 0.07
+            logits_per_image = (image_encodings @ text_encodings.t()) / temperature
+            logits_per_text = logits_per_image.T
 
             targets = torch.arange(len(images),dtype=torch.long, device=device)
             CE_loss = nn.CrossEntropyLoss()
@@ -214,18 +213,18 @@ def main(args):
             images = images.to(device)
             texts = texts.to(device)
             #encoding & cosine similarity as logits       
-            logits_per_image, logits_per_text = model(images, texts)
+            #logits_per_image, logits_per_text = model(images, texts)
 
             #encoding & cosine similarity as logits 
-            # if args.trainable == "new_layer":
-            #     image_encodings, text_encodings = new_model(images, texts)
-            # else :                 
-            #     image_encodings = model.encode_image(images)
-            #     text_encodings = model.encode_text(texts)
+            if args.trainable == "new_layer":
+                image_encodings, text_encodings = new_model(images, texts)
+            else :                 
+                image_encodings = model.encode_image(images)
+                text_encodings = model.encode_text(texts)
 
-            # temperature = 0.07
-            # logits_per_image = (image_encodings @ text_encodings.t()) / temperature
-            # logits_per_text = logits_per_image.T
+            temperature = 0.07
+            logits_per_image = (image_encodings @ text_encodings.t()) / temperature
+            logits_per_text = logits_per_image.T
 
             targets = torch.arange(len(images),dtype=torch.long, device=device)
             CE_loss = nn.CrossEntropyLoss()

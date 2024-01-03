@@ -134,12 +134,15 @@ def main(args):
     ######################################
     #Loss function define (change inside the epoch)
 
-    CE_loss = nn.CrossEntropyLoss()
-        
-    def soft_cross_entropy(teacher_logits, student_logits):
-        return -(teacher_logits.softmax(dim=1) * student_logits.log_softmax(dim=1)).sum(dim=1).mean()
-        
+    def loss(logits_per_image,logits_per_text):
+        CE_loss = nn.CrossEntropyLoss()
+        targets = torch.arange(len(images),dtype=torch.long, device=device)
 
+        image_loss = CE_loss(logits_per_image, targets)
+        text_loss  = CE_loss(logits_per_text, targets)
+        loss = (image_loss + text_loss)/2
+        return loss
+        
     #https://github.com/openai/CLIP/issues/57
     def convert_models_to_fp32(model): 
         for p in model.parameters(): 
@@ -185,23 +188,7 @@ def main(args):
             # logits_per_image = (image_encodings @ text_encodings.t()) / temperature
             # logits_per_text = logits_per_image.T
                 
-            ##############################################
-            #Change the loss function
-            if args.loss == "soft_cross_entropy":
-                teacher_logits_image = logits_per_image @ logits_per_image.T
-                teacher_logits_text = logits_per_text @ logits_per_text.T
-
-                image_loss = soft_cross_entropy(teacher_logits_image, logits_per_image)
-                text_loss = soft_cross_entropy(teacher_logits_text, logits_per_text)
-                loss = (image_loss + text_loss) / 2
-
-            if args.loss == "cross_entropy" :
-                targets = torch.arange(len(images),dtype=torch.long, device=device)
-
-                image_loss = CE_loss(logits_per_image, targets)
-                text_loss  = CE_loss(logits_per_text, targets)
-                loss = (image_loss + text_loss)/2
-            
+            loss = loss(logits_per_image,logits_per_text)
             loss.backward()
 
             total_loss += loss.item()
@@ -250,11 +237,7 @@ def main(args):
         #     # logits_per_image = (image_encodings @ text_encodings.t()) / temperature
         #     # logits_per_text = logits_per_image.T
 
-        #     if args.loss == "cross_entropy" :
-        #         targets = torch.arange(len(images),dtype=torch.long, device=device)
-        #         image_loss = CE_loss(logits_per_image, targets)
-        #         text_loss  = CE_loss(logits_per_text, targets)
-        #         val_loss = (image_loss + text_loss)/2
+        #     loss = loss(logits_per_image,logits_per_text)
 
         #     total_val_loss += val_loss.item()
             

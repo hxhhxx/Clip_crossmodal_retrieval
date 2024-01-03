@@ -13,6 +13,7 @@ def parse_arguments():
     parser.add_argument("--trainable", default="linear_projection", help="Loss of the model")
     parser.add_argument("--loss", default="cross_entropy", help="Loss of the model")
     parser.add_argument("--scheduler", action='store_true')
+    parser.add_argument("--model_path", default="none", help="best model path")
 
  
     # datasets parameters

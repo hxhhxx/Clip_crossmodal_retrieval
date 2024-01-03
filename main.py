@@ -87,9 +87,10 @@ def main(args):
         eva_Loader = DataLoader(dataset=eva_dataset, batch_size=args.batch_size, shuffle=False)
         Evaluation.metrics_at_k(model, eva_Loader, k_vals= k_vals, batch_size=args.batch_size)
 
-    train_dataset, val_dataset,_ = split_dataset(args,preprocess,target_transform)
+    train_dataset, val_dataset, test_dataset = split_dataset(args,preprocess,target_transform)
     train_Loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=False)
     val_loader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, shuffle=False)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=args.batch_size, shuffle=False)
 
     ####################################
     #change the projection head inside the model
@@ -148,8 +149,9 @@ def main(args):
 
     ##################################################
     #epoch start
-                
+    best_val_loss = float('inf')            
     for epoch in range(args.num_epoch):
+        print(f"start the {epoch}/{args.num_epoch}")
         total_loss = 0
 
         if args.trainable == "new_layer":
@@ -220,15 +222,6 @@ def main(args):
                     clip.model.convert_weights(new_model)
 
 
-        if args.trainable == "new_layer":
-            new_model.eval()
-            print("start to evaluate")
-            Evaluation.metrics_at_k(new_model, val_loader, k_vals= k_vals, batch_size=16)
-        else:
-            model.eval()
-            print("start to evaluate")
-            Evaluation.metrics_at_k(model, val_loader, k_vals= k_vals, batch_size=16)
-
         avg_train_loss = total_loss / len(train_Loader)
         print(f"Training Loss: {avg_train_loss:.4f}")
 
@@ -277,6 +270,14 @@ def main(args):
             best_val_loss = avg_val_loss
             best_model = model.state_dict()
 
+        print("start to test for this epoch")
+        if args.trainable == "new_layer":
+            new_model.eval()
+            Evaluation.metrics_at_k(new_model, test_loader, k_vals= k_vals, batch_size=16)
+        else:
+            model.eval()
+            Evaluation.metrics_at_k(model, test_loader, k_vals= k_vals, batch_size=16)
+
     if best_model is not None:
         torch.save(best_model, '/kaggle/working/best_model.pth')
         print("save the best model")
@@ -284,7 +285,7 @@ def main(args):
     model, _ = clip.load(args.model, device=device)
     model.load_state_dict(torch.load('/kaggle/working/best_model.pth'))
     print("start to test:")
-    Evaluation.metrics_at_k(model, eva_Loader, k_vals= k_vals, batch_size=args.batch_size)
+    Evaluation.metrics_at_k(model, test_loader, k_vals= k_vals, batch_size=args.batch_size)
 
 
 

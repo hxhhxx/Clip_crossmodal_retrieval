@@ -235,8 +235,8 @@ def main(args):
 
             total_val_loss += val_loss
 
-            if args.scheduler:
-                lr_scheduler.step()
+            # if args.scheduler:
+            #     lr_scheduler.step()
 
         print("start to print the matrix of val for this epoch")
         if args.trainable == "new_layer":

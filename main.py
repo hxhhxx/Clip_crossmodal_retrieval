@@ -78,6 +78,8 @@ def main(args):
     target_transform = lambda texts: clip.tokenize(texts[:5])
 
     if args.evaluate:
+        if args.model_path != "none":
+            model.load_state_dict(torch.load(args.model_path))
         model.eval()
         print("Start evaluating", flush=True)
 
@@ -201,8 +203,8 @@ def main(args):
             loss.backward()
 
             total_loss += loss.item()
-            if args.scheduler:
-                optimizer.step()
+
+            optimizer.step()
 
             if device == "cpu":
                 optimizer.step()
@@ -226,8 +228,9 @@ def main(args):
             model.eval()
             print("start to evaluate")
             Evaluation.metrics_at_k(model, val_loader, k_vals= k_vals, batch_size=16)
-
-        lr_scheduler.step()
+        
+        if args.scheduler:
+            lr_scheduler.step()
 
         avg_train_loss = total_loss / len(train_Loader)
         print(f"Training Loss: {avg_train_loss:.4f}")

@@ -201,8 +201,8 @@ def main(args):
             loss.backward()
 
             total_loss += loss.item()
-
-            optimizer.step()
+            if args.scheduler:
+                optimizer.step()
 
             if device == "cpu":
                 optimizer.step()

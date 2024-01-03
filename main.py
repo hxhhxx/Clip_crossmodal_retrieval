@@ -47,7 +47,7 @@ class ProjectionHead(nn.Module):
         self.linear = nn.Linear(embed_dim, 512)
         self.gelu = nn.GELU()
         self.dropout = nn.Dropout(0.1)
-        self.fc = nn.linear(512, 512)
+        self.fc = nn.Linear(512, 512)
     
     def forward(self, x):
         x = self.linear(x)

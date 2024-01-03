@@ -158,7 +158,7 @@ def main(args):
             new_model.train()
         else :
             model.train()
-        print(f"start the {epoch}/{args.num_epoch} epoch training")
+        print(f"start the {epoch+1}/{args.num_epoch} epoch training")
 
         for images, texts in tqdm(train_Loader):
             optimizer.zero_grad()
@@ -216,6 +216,7 @@ def main(args):
                     convert_models_to_fp32(new_model)
                 else :
                     convert_models_to_fp32(model)
+                
                 optimizer.step()
                 clip.model.convert_weights(model)
                 if args.trainable == "new_layer":
@@ -273,10 +274,8 @@ def main(args):
 
         print("start to test for this epoch")
         if args.trainable == "new_layer":
-            new_model.eval()
             Evaluation.metrics_at_k(new_model, test_loader, k_vals= k_vals, batch_size=16)
         else:
-            model.eval()
             Evaluation.metrics_at_k(model, test_loader, k_vals= k_vals, batch_size=16)
 
     if best_model is not None:

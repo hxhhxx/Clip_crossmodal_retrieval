@@ -113,7 +113,6 @@ def main(args):
     optimizer = optim.Adam(trainable_params, lr=args.lr, betas=(0.9,0.98),eps=1e-6,weight_decay=0.2)
 
     CE_loss = nn.CrossEntropyLoss()
-    contrastive_loss = losses.ContrastiveLoss(pos_margin=0.0, neg_margin=1)
 
     #https://github.com/openai/CLIP/issues/57
     def convert_models_to_fp32(model): 
@@ -158,18 +157,6 @@ def main(args):
                 image_loss = CE_loss(logits_per_image, targets)
                 text_loss  = CE_loss(logits_per_text, targets)
                 loss = (image_loss + text_loss)/2
-
-            if args.loss == "contrastive" :
-                
-                #使用pytorch_metric_learning库结果和我自己写的第一个一样很差，猜测可能是相似值过于靠近
-                targets = torch.arange(len(images))
-
-
-                image_loss = contrastive_loss(logits_per_image , targets)
-                text_loss = contrastive_loss(logits_per_text , targets)
-                loss = (image_loss + text_loss)/2
-            
-                # loss = contrastive_loss(logits_per_image, logits_per_text)
 
             
             loss.backward()

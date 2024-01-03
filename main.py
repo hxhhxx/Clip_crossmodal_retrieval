@@ -249,7 +249,10 @@ def main(args):
 
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            best_model = model.state_dict()
+            if args.trainable == "new_layer":
+                best_model = new_model.state_dict()
+            else:
+                best_model = model.state_dict()
 
                
         if args.scheduler:
@@ -268,9 +271,23 @@ def main(args):
     print("save the best model")
 
     model, _ = clip.load(args.model, device=device)
-    model.load_state_dict(torch.load('/kaggle/working/best_model.pth'))
+    if args.trainable == "new_layer":
+        # Create custom model
+        state_dict = model.state_dict()
+        embed_dim = state_dict["text_projection"].shape[1]
+        #print(embed_dim) #512 in b/32 
+        new_model = CustomCLIPModel(model, embed_dim).to(device)
+        clip.model.convert_weights(new_model)
+
+        new_model.load_state_dict(torch.load('/kaggle/working/best_model.pth'))
+        
+    else:    
+        model.load_state_dict(torch.load('/kaggle/working/best_model.pth'))
     print("start to test:")
-    Evaluation.metrics_at_k(model, test_loader, k_vals= k_vals, batch_size=16)
+    if args.trainable == "new_layer":
+        Evaluation.metrics_at_k(new_model, test_loader, k_vals= k_vals, batch_size=16)
+    else :
+        Evaluation.metrics_at_k(model, test_loader, k_vals= k_vals, batch_size=16)
 
 
 

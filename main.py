@@ -85,7 +85,7 @@ def main(args):
 
         _,_,eva_dataset = split_dataset(args,preprocess,target_transform)
         eva_Loader = DataLoader(dataset=eva_dataset, batch_size=args.batch_size, shuffle=False)
-        Evaluation.metrics_at_k(model, eva_Loader, k_vals= k_vals, batch_size=args.batch_size)
+        Evaluation.metrics_at_k(model, eva_Loader, k_vals= k_vals, batch_size=16)
 
     train_dataset, val_dataset, test_dataset = split_dataset(args,preprocess,target_transform)
     train_Loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=False)
@@ -151,14 +151,14 @@ def main(args):
     #epoch start
     best_val_loss = float('inf')            
     for epoch in range(args.num_epoch):
-        print(f"start the {epoch}/{args.num_epoch}")
+
         total_loss = 0
 
         if args.trainable == "new_layer":
             new_model.train()
         else :
             model.train()
-        print("start to train")
+        print(f"start the {epoch}/{args.num_epoch} epoch training")
 
         for images, texts in tqdm(train_Loader):
             optimizer.zero_grad()
@@ -227,6 +227,7 @@ def main(args):
 
         total_val_loss = 0
         with torch.no_grad():
+            model.eval()
             print(f"Epoch {epoch+1}/{args.num_epoch} - Validation")
 
             for images, texts in tqdm(val_loader):
@@ -285,7 +286,7 @@ def main(args):
     model, _ = clip.load(args.model, device=device)
     model.load_state_dict(torch.load('/kaggle/working/best_model.pth'))
     print("start to test:")
-    Evaluation.metrics_at_k(model, test_loader, k_vals= k_vals, batch_size=args.batch_size)
+    Evaluation.metrics_at_k(model, test_loader, k_vals= k_vals, batch_size=16)
 
 
 

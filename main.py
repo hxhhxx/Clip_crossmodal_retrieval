@@ -149,7 +149,7 @@ def main(args):
 
     ##################################################
     #epoch start
-    best_val_loss = float('inf')            
+    #best_val_loss = float('inf')            
     for epoch in range(args.num_epoch):
 
         total_loss = 0
@@ -208,19 +208,19 @@ def main(args):
 
             optimizer.step()
 
-            if device == "cpu":
-                optimizer.step()
+            # if device == "cpu":
+            #     optimizer.step()
                 
-            else : 
-                if args.trainable == "new_layer":
-                    convert_models_to_fp32(new_model)
-                else :
-                    convert_models_to_fp32(model)
+            # else : 
+            #     if args.trainable == "new_layer":
+            #         convert_models_to_fp32(new_model)
+            #     else :
+            #         convert_models_to_fp32(model)
                 
-                optimizer.step()
-                clip.model.convert_weights(model)
-                if args.trainable == "new_layer":
-                    clip.model.convert_weights(new_model)
+            #     optimizer.step()
+            #     clip.model.convert_weights(model)
+            #     if args.trainable == "new_layer":
+            #         clip.model.convert_weights(new_model)
 
         avg_train_loss = total_loss / len(train_Loader)
         print(f"Training Loss: {avg_train_loss:.4f}")
@@ -282,7 +282,6 @@ def main(args):
     model, _ = clip.load(args.model, device=device)
     model.load_state_dict(torch.load('/kaggle/working/best_model.pth'))
     print("start to test:")
-    model.eval()
     Evaluation.metrics_at_k(model, test_loader, k_vals= k_vals, batch_size=16)
 
 

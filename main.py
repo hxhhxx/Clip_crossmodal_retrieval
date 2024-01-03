@@ -189,19 +189,15 @@ def main(args):
 
             #optimizer.step()
 
-            if device == "cpu":
-                optimizer.step()
-                
-            else : 
-                if args.trainable == "new_layer":
-                    convert_models_to_fp32(new_model)
-                else :
-                    convert_models_to_fp32(model)
-                
+            if args.trainable == "new_layer":
+                convert_models_to_fp32(new_model)
+                optimizer.step()            
+                clip.model.convert_weights(new_model)
+
+            else :
+                convert_models_to_fp32(model)
                 optimizer.step()
                 clip.model.convert_weights(model)
-                if args.trainable == "new_layer":
-                    clip.model.convert_weights(new_model)
 
         avg_train_loss = total_loss / len(train_Loader)
         print(f"Training Loss: {avg_train_loss:.4f}")

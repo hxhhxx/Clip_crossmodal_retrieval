@@ -89,8 +89,8 @@ def main(args):
 
     train_dataset, val_dataset, test_dataset = split_dataset(args,preprocess,target_transform)
     train_Loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=False)
-    val_loader = DataLoader(dataset=val_dataset, batch_size=16, shuffle=False)
-    test_loader = DataLoader(dataset=test_dataset, batch_size=16, shuffle=False)
+    val_loader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, shuffle=False)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=args.batch_size, shuffle=False)
 
     ####################################
     #change the projection head inside the model
@@ -131,17 +131,6 @@ def main(args):
 
     if args.scheduler:
         lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.6)  
-    ######################################
-    #Loss function define (change inside the epoch)
-
-    def loss(logits_per_image,logits_per_text):
-        CE_loss = nn.CrossEntropyLoss()
-        targets = torch.arange(len(images),dtype=torch.long, device=device)
-
-        image_loss = CE_loss(logits_per_image, targets)
-        text_loss  = CE_loss(logits_per_text, targets)
-        loss = (image_loss + text_loss)/2
-        return loss
         
     #https://github.com/openai/CLIP/issues/57
     def convert_models_to_fp32(model): 
@@ -187,8 +176,13 @@ def main(args):
             # temperature = 0.07
             # logits_per_image = (image_encodings @ text_encodings.t()) / temperature
             # logits_per_text = logits_per_image.T
-                
-            loss = loss(logits_per_image,logits_per_text)
+
+            targets = torch.arange(len(images),dtype=torch.long, device=device)
+            CE_loss = nn.CrossEntropyLoss()
+            image_loss = CE_loss(logits_per_image, targets)
+            text_loss  = CE_loss(logits_per_text, targets)
+            loss = (image_loss + text_loss)/2
+            
             loss.backward()
 
             total_loss += loss.item()
@@ -237,7 +231,11 @@ def main(args):
         #     # logits_per_image = (image_encodings @ text_encodings.t()) / temperature
         #     # logits_per_text = logits_per_image.T
 
-        #     loss = loss(logits_per_image,logits_per_text)
+        #     targets = torch.arange(len(images),dtype=torch.long, device=device)
+        #     CE_loss = nn.CrossEntropyLoss()
+        #     image_loss = CE_loss(logits_per_image, targets)
+        #     ext_loss  = CE_loss(logits_per_text, targets)
+        #     loss = (image_loss + text_loss)/2
 
         #     total_val_loss += val_loss.item()
             

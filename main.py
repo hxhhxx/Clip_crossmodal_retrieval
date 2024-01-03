@@ -141,7 +141,7 @@ def main(args):
 
     ##################################################
     #epoch start
-    #best_val_loss = float('inf')            
+    best_val_loss = float('inf')            
     for epoch in range(args.num_epoch):
 
         total_loss = 0
@@ -238,7 +238,12 @@ def main(args):
             if args.scheduler:
                 lr_scheduler.step()
 
-            
+        print("start to print the matrix of val for this epoch")
+        if args.trainable == "new_layer":
+            Evaluation.metrics_at_k(new_model, val_loader, k_vals= k_vals, batch_size=16)
+        else:
+            Evaluation.metrics_at_k(model, val_loader, k_vals= k_vals, batch_size=16)
+             
         ######
         avg_val_loss = total_val_loss / len(val_loader)
         print(f"Val Loss: {avg_val_loss:.4f}")
@@ -247,12 +252,7 @@ def main(args):
             best_val_loss = avg_val_loss
             best_model = model.state_dict()
 
-        print("start to test for this epoch")
-        if args.trainable == "new_layer":
-            Evaluation.metrics_at_k(new_model, val_loader, k_vals= k_vals, batch_size=16)
-        else:
-            Evaluation.metrics_at_k(model, val_loader, k_vals= k_vals, batch_size=16)
-                
+               
         if args.scheduler:
             if args.trainable == "new_layer":
                 convert_models_to_fp32(new_model)

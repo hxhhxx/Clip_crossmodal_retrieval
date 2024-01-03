@@ -1,7 +1,9 @@
+from tqdm import tqdm
+import torch
 import torch.nn as nn
 from torch.nn import functional as F
 import torch.optim as optim
-from pytorch_metric_learning import losses
+#from pytorch_metric_learning import losses
 import clip
 from torch.utils.data import random_split
 from Datasets.Flickr30k import Flickr30k

@@ -279,9 +279,11 @@ def main(args):
 
     if best_model is not None:
         torch.save(best_model, '/kaggle/working/best_model.pth')
+        print("save the best model")
 
     model, _ = clip.load(args.model, device=device)
     model.load_state_dict(torch.load('/kaggle/working/best_model.pth'))
+    print("start to test:")
     Evaluation.metrics_at_k(model, eva_Loader, k_vals= k_vals, batch_size=args.batch_size)
 
 

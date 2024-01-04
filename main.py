@@ -186,7 +186,8 @@ def main(args):
                 cosine_similarity = F.cosine_similarity(logits_per_image[:, None, :], logits_per_text[None, :, :], dim=2)
                 target = torch.eye(cosine_similarity.shape[0],dtype=torch.long, device=device)
                 loss = 0.5 * target * (1 - cosine_similarity) + 0.5 * (1 - target) * torch.clamp(cosine_similarity - 0.1, min=0.0)
-
+                tot_loss = torch.sum(tot_loss)
+                
             if args.loss == "cross_entropy":
                 CE_loss = nn.CrossEntropyLoss()
                 image_loss = CE_loss(logits_per_image, targets)

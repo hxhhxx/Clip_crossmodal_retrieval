@@ -179,12 +179,20 @@ def main(args):
             logits_per_image = (image_encodings @ text_encodings.t()) / temperature
             logits_per_text = logits_per_image.T
 
+            ########################
             targets = torch.arange(len(images),dtype=torch.long, device=device)
-            CE_loss = nn.CrossEntropyLoss()
-            image_loss = CE_loss(logits_per_image, targets)
-            text_loss  = CE_loss(logits_per_text, targets)
-            loss = (image_loss + text_loss)/2
-            
+            if args.loss == "cos_embedd":
+
+                cosine_similarity = F.cosine_similarity(logits_per_image[:, None, :], logits_per_text[None, :, :], dim=2)
+                target = torch.eye(cosine_similarity.shape[0],dtype=torch.long, device=device)
+                loss = 0.5 * target * (1 - cosine_similarity) + 0.5 * (1 - target) * torch.clamp(cosine_similarity - 0.1, min=0.0)
+
+            if args.loss == "cross_entropy":
+                CE_loss = nn.CrossEntropyLoss()
+                image_loss = CE_loss(logits_per_image, targets)
+                text_loss  = CE_loss(logits_per_text, targets)
+                loss = (image_loss + text_loss)/2
+                
             loss.backward()
 
             total_loss += loss
@@ -250,6 +258,8 @@ def main(args):
         avg_val_loss = total_val_loss / len(val_loader)
         print(f"Val Loss: {avg_val_loss:.4f}")
 
+        lr_scheduler.step(avg_val_loss)
+
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
             if args.trainable == "new_layer":
@@ -257,18 +267,6 @@ def main(args):
             else:
                 best_model = model.state_dict()
 
-               
-        if args.scheduler:
-            if args.trainable == "new_layer":
-                convert_models_to_fp32(new_model)
-                lr_scheduler.step(avg_val_loss)          
-                clip.model.convert_weights(new_model)
-
-            else :
-                convert_models_to_fp32(model)
-                lr_scheduler.step(avg_val_loss)
-                clip.model.convert_weights(model)
-            
     
     torch.save(best_model, '/kaggle/working/best_model.pth')
     print("save the best model")

@@ -246,8 +246,8 @@ def main(args):
 
             total_val_loss += val_loss
 
-            # if args.scheduler:
-            #     lr_scheduler.step()
+            if args.scheduler:
+                 lr_scheduler.step()
 
         print("start to print the matrix of val for this epoch")
         if args.trainable == "new_layer":
@@ -259,7 +259,6 @@ def main(args):
         avg_val_loss = total_val_loss / len(val_loader)
         print(f"Val Loss: {avg_val_loss:.4f}")
 
-        lr_scheduler.step(avg_val_loss)
 
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss

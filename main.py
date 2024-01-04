@@ -175,20 +175,21 @@ def main(args):
                 image_encodings = model.encode_image(images)
                 text_encodings = model.encode_text(texts)
 
-            temperature = 0.07
-            logits_per_image = (image_encodings @ text_encodings.t()) / temperature
-            logits_per_text = logits_per_image.T
+            image_encodings = image_encodings / image_encodings.norm(dim=1, keepdim=True)
+            text_encodings = text_encodings / text_encodings.norm(dim=1, keepdim=True)
 
-            ########################
-            targets = torch.arange(len(images),dtype=torch.long, device=device)
             if args.loss == "cos_embedd":
-
-                cosine_similarity = F.cosine_similarity(logits_per_image[:, None, :], logits_per_text[None, :, :], dim=2)
+                cosine_similarity = F.cosine_similarity(image_encodings[:, None, :], text_encodings[None, :, :], dim=2)
                 target = torch.eye(cosine_similarity.shape[0],dtype=torch.long, device=device)
                 loss = 0.5 * target * (1 - cosine_similarity) + 0.5 * (1 - target) * torch.clamp(cosine_similarity - 0.1, min=0.0)
                 loss = torch.sum(loss)
 
             if args.loss == "cross_entropy":
+                temperature = 0.07
+                logits_per_image = (image_encodings @ text_encodings.t()) / temperature
+                logits_per_text = logits_per_image.T
+                targets = torch.arange(len(images),dtype=torch.long, device=device)
+
                 CE_loss = nn.CrossEntropyLoss()
                 image_loss = CE_loss(logits_per_image, targets)
                 text_loss  = CE_loss(logits_per_text, targets)
@@ -234,19 +235,21 @@ def main(args):
                 image_encodings = model.encode_image(images)
                 text_encodings = model.encode_text(texts)
 
-            temperature = 0.07
-            logits_per_image = (image_encodings @ text_encodings.t()) / temperature
-            logits_per_text = logits_per_image.T
+            image_encodings = image_encodings / image_encodings.norm(dim=1, keepdim=True)
+            text_encodings = text_encodings / text_encodings.norm(dim=1, keepdim=True)
 
-            targets = torch.arange(len(images),dtype=torch.long, device=device)
             if args.loss == "cos_embedd":
-
-                cosine_similarity = F.cosine_similarity(logits_per_image[:, None, :], logits_per_text[None, :, :], dim=2)
+                cosine_similarity = F.cosine_similarity(image_encodings[:, None, :], text_encodings[None, :, :], dim=2)
                 target = torch.eye(cosine_similarity.shape[0],dtype=torch.long, device=device)
                 loss = 0.5 * target * (1 - cosine_similarity) + 0.5 * (1 - target) * torch.clamp(cosine_similarity - 0.1, min=0.0)
                 loss = torch.sum(loss)
 
             if args.loss == "cross_entropy":
+                temperature = 0.07
+                logits_per_image = (image_encodings @ text_encodings.t()) / temperature
+                logits_per_text = logits_per_image.T
+                targets = torch.arange(len(images),dtype=torch.long, device=device)
+
                 CE_loss = nn.CrossEntropyLoss()
                 image_loss = CE_loss(logits_per_image, targets)
                 text_loss  = CE_loss(logits_per_text, targets)

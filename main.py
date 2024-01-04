@@ -239,12 +239,19 @@ def main(args):
             logits_per_text = logits_per_image.T
 
             targets = torch.arange(len(images),dtype=torch.long, device=device)
-            CE_loss = nn.CrossEntropyLoss()
-            image_loss = CE_loss(logits_per_image, targets)
-            text_loss  = CE_loss(logits_per_text, targets)
-            val_loss = (image_loss + text_loss)/2
+            if args.loss == "cos_embedd":
 
-            total_val_loss += val_loss
+                cosine_similarity = F.cosine_similarity(logits_per_image[:, None, :], logits_per_text[None, :, :], dim=2)
+                target = torch.eye(cosine_similarity.shape[0],dtype=torch.long, device=device)
+                loss = 0.5 * target * (1 - cosine_similarity) + 0.5 * (1 - target) * torch.clamp(cosine_similarity - 0.1, min=0.0)
+                loss = torch.sum(loss)
+
+            if args.loss == "cross_entropy":
+                CE_loss = nn.CrossEntropyLoss()
+                image_loss = CE_loss(logits_per_image, targets)
+                text_loss  = CE_loss(logits_per_text, targets)
+                loss = (image_loss + text_loss)/2
+            total_val_loss += loss
 
             if args.scheduler:
                  lr_scheduler.step()

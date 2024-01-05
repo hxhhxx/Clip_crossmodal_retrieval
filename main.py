@@ -126,7 +126,9 @@ def main(args):
 
         for param in model.parameters():
             param.requires_grad = False
-        model.text_projection.requires_grad = True        
+            
+        model.text_projection.requires_grad = True
+        model.visual.proj.requires_grad = True   
 
         trainable_params = [p for p in new_model.parameters() if p.requires_grad] 
 

@@ -230,8 +230,8 @@ def main(args):
                 targets = F.softmax(
                     (images_similarity + texts_similarity) / 2 * temperature, dim=-1
                 )
-                texts_loss = soft_cross_entropy(logits_per_text, targets, reduction='none')
-                images_loss = soft_cross_entropy(logits_per_image, targets.T, reduction='none')
+                texts_loss = soft_cross_entropy(logits_per_text, targets)
+                images_loss = soft_cross_entropy(logits_per_image, targets)
                 loss =  (images_loss + texts_loss) / 2.0 # shape: (batch_size)
                         
             loss.backward()

@@ -56,19 +56,38 @@ class ProjectionHead(nn.Module):
         # x = self.fc(x)
         return x
 
+class Adapter(nn.Module):
+    def __init__(self, embed_dim, reduction=4):
+        super(Adapter, self).__init__()
+        self.fc = nn.Sequential(
+            nn.Linear(embed_dim, embed_dim // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(embed_dim // reduction, embed_dim, bias=False),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x):
+        x = self.fc(x)
+        return x
+
 class CustomCLIPModel(nn.Module):
     def __init__(self, clip_model, embed_dim):
         super(CustomCLIPModel, self).__init__()
         self.clip_model = clip_model
-        self.additional_layers = ProjectionHead(embed_dim)
+        #self.additional_layers = ProjectionHead(embed_dim)
+        self.additional_layers = Adapter(embed_dim,4)
         
     def forward(self, image, text):
         # Get features from CLIP
         image_features = self.clip_model.encode_image(image)
         text_features = self.clip_model.encode_text(text)
+
         # Pass features through additional layers
-        image_features = self.additional_layers(image_features)
-        text_features = self.additional_layers(text_features)
+        x = self.additional_layers(image_features)
+        ratio = 0.2
+        image_features = ratio * x + (1 - ratio) * image_features
+
+        #text_features = self.additional_layers(text_features)
         return image_features, text_features
 
 

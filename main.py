@@ -152,7 +152,7 @@ def main(args):
 
     if args.scheduler:
         #lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.6) 
-        lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.6, patience=1) 
+        lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=1) 
         
     #https://github.com/openai/CLIP/issues/57
     def convert_models_to_fp32(model): 
@@ -277,7 +277,7 @@ def main(args):
             total_val_loss += loss
 
             if args.scheduler:
-                 lr_scheduler.step()
+                 lr_scheduler.step(total_val_loss)
 
         print("start to print the matrix of val for this epoch")
         if args.trainable == "new_layer":

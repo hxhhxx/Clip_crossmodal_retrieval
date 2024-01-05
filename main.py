@@ -143,6 +143,12 @@ def main(args):
 
         trainable_params = [p for p in model.parameters() if p.requires_grad]
 
+    ###############
+    def soft_cross_entropy(preds, targets):
+        log_softmax = nn.LogSoftmax(dim=-1)
+        loss = (-targets * log_softmax(preds)).sum(1)
+        return loss.mean()
+
     ######################################
     #change the Optimizer
          
@@ -213,7 +219,21 @@ def main(args):
                 image_loss = CE_loss(logits_per_image, targets)
                 text_loss  = CE_loss(logits_per_text, targets)
                 loss = (image_loss + text_loss)/2
-                
+
+            if args.loss == "soft_cross_entropy":
+                temperature = 0.07
+                logits_per_image = (image_encodings @ text_encodings.t()) / temperature
+                logits_per_text = logits_per_image.T
+
+                images_similarity = logits_per_image @ logits_per_image.T
+                texts_similarity = logits_per_text @ logits_per_text.T
+                targets = F.softmax(
+                    (images_similarity + texts_similarity) / 2 * temperature, dim=-1
+                )
+                texts_loss = soft_cross_entropy(logits_per_text, targets, reduction='none')
+                images_loss = soft_cross_entropy(logits_per_image, targets.T, reduction='none')
+                loss =  (images_loss + texts_loss) / 2.0 # shape: (batch_size)
+                        
             loss.backward()
 
             total_loss += loss

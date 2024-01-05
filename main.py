@@ -225,10 +225,10 @@ def main(args):
                 logits_per_image = (image_encodings @ text_encodings.t()) / temperature
                 logits_per_text = logits_per_image.T
 
-                images_similarity = logits_per_image @ logits_per_image.T
-                texts_similarity = logits_per_text @ logits_per_text.T
+                images_similarity = (logits_per_image @ logits_per_image.T) / temperature
+                texts_similarity = (logits_per_text @ logits_per_text.T) / temperature
                 targets = F.softmax(
-                    (images_similarity + texts_similarity) / 2 * temperature, dim=-1
+                    (images_similarity + texts_similarity) / 2 , dim=-1
                 )
                 texts_loss = soft_cross_entropy(logits_per_text, targets)
                 images_loss = soft_cross_entropy(logits_per_image, targets)

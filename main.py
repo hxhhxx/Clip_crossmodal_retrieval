@@ -125,7 +125,8 @@ def main(args):
         clip.model.convert_weights(new_model)
 
         for param in model.parameters():
-            param.requires_grad = False        
+            param.requires_grad = False
+        model.text_projection.requires_grad = True        
 
         trainable_params = [p for p in new_model.parameters() if p.requires_grad] 
 

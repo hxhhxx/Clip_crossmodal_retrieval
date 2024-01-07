@@ -7,7 +7,7 @@ import torch.optim as optim
 import clip
 from torch.utils.data import random_split
 from Datasets.Flickr30k import Flickr30k
-#from Datasets.MSCOCO import COCOcaption
+from torchvision.datasets import CocoCaptions
 from torch.utils.data import DataLoader
 import Evaluation
 import parser
@@ -24,10 +24,24 @@ def split_dataset(args, preprocess, target_transform):
         train_dataset, val_dataset, test_dataset = random_split(Dataset, [train_size, val_size, test_size])
     elif args.dataset == "coco":
         # 加载COCO数据集
-        val_dataset = COCOcaption(root = args.val_root, ann_file = args.val_ann, transform = preprocess, target_transform = target_transform)
-        #train_dataset = COCOcaption(args.train_root, args.train_ann, transform = preprocess, target_transform = target_transform)
-        #test_dataset = COCOcaption(args.test_root, args.test_ann, transform = preprocess, target_transform = target_transform)
+        coco = CocoCaptions(root = '/kaggle/input/coco-2017-dataset/coco2017/train2017',
+                        annFile = '/kaggle/input/coco-2017-dataset/coco2017/annotations/captions_train2017.json',
+                        transform=preprocess,
+                        target_transform=lambda texts: clip.tokenize(texts[0:5]))        
+        train_ratio = 0.95
 
+        train_size = int(train_ratio * len(coco))
+        val_size = len(coco) - train_size
+        train_dataset, val_dataset = torch.utils.data.random_split(coco, [train_size, val_size])
+
+        # coco traning and validation datasets
+        coco_test = CocoCaptions(root = '/kaggle/input/coco-2017-dataset/coco2017/val2017',
+                                annFile = '/kaggle/input/coco-2017-dataset/coco2017/annotations/captions_val2017.json',
+                                transform=preprocess,
+                                target_transform=lambda texts: clip.tokenize(texts[0:5]))
+
+        test_dataset = DataLoader(coco_test,batch_size=64,shuffle=False,num_workers=4,pin_memory=False)
+    
     return  train_dataset, val_dataset ,test_dataset
 
 #https://github.com/openai/CLIP/issues/57 error using Adam optimizer

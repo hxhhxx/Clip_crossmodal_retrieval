@@ -22,6 +22,7 @@ def split_dataset(args, preprocess, target_transform):
         train_size, val_size, test_size= dataset_len-2000, 1000, 1000
 
         train_dataset, val_dataset, test_dataset = random_split(Dataset, [train_size, val_size, test_size])
+    
     elif args.dataset == "coco":
         # 加载COCO数据集
         coco = CocoCaptions(root = '/kaggle/input/coco-2017-dataset/coco2017/train2017',
@@ -123,8 +124,8 @@ def main(args):
 
     train_dataset, val_dataset, test_dataset = split_dataset(args,preprocess,target_transform)
     train_Loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=False)
-    val_loader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, shuffle=False)
-    test_loader = DataLoader(dataset=test_dataset, batch_size=args.batch_size, shuffle=False)
+    val_loader = DataLoader(dataset=val_dataset, batch_size=160, shuffle=False)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=16, shuffle=False)
 
     ####################################
     #change the projection head inside the model

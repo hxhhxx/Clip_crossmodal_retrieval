@@ -19,7 +19,7 @@ def split_dataset(args, preprocess, target_transform):
         dataset_len = len(Dataset)
         #print(len(flickr_Dataset))
         #31783
-        train_size, val_size, test_size= dataset_len, 1000, 1000
+        train_size, val_size, test_size= dataset_len-2000, 1000, 1000
 
         train_dataset, val_dataset, test_dataset = random_split(Dataset, [train_size, val_size, test_size])
     elif args.dataset == "coco":

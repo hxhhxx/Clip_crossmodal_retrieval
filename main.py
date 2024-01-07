@@ -124,7 +124,7 @@ def main(args):
 
     train_dataset, val_dataset, test_dataset = split_dataset(args,preprocess,target_transform)
     train_Loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=False)
-    val_loader = DataLoader(dataset=val_dataset, batch_size=160, shuffle=False)
+    val_loader = DataLoader(dataset=val_dataset, batch_size=16, shuffle=False)
     test_loader = DataLoader(dataset=test_dataset, batch_size=16, shuffle=False)
 
     ####################################

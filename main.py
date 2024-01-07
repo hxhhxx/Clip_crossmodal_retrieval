@@ -120,7 +120,7 @@ def main(args):
         # Create custom model
         state_dict = model.state_dict()
         embed_dim = state_dict["text_projection"].shape[1]
-        #print(embed_dim) #512 in b/32 
+        print(embed_dim) #512 in b/32 
         new_model = CustomCLIPModel(model, embed_dim).to(device)
         clip.model.convert_weights(new_model)
 

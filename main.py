@@ -19,9 +19,9 @@ def split_dataset(args, preprocess, target_transform):
         dataset_len = len(Dataset)
         #print(len(flickr_Dataset))
         #31783
-        train_size, val_size, test_size, blank_size= dataset_len-31750, 1000, 1000, 29750
+        train_size, val_size, test_size= dataset_len, 1000, 1000
 
-        train_dataset, val_dataset, test_dataset, _ = random_split(Dataset, [train_size, val_size, test_size, blank_size])
+        train_dataset, val_dataset, test_dataset = random_split(Dataset, [train_size, val_size, test_size])
     elif args.dataset == "coco":
         # 加载COCO数据集
         val_dataset = COCOcaption(root = args.val_root, ann_file = args.val_ann, transform = preprocess, target_transform = target_transform)

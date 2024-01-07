@@ -124,11 +124,8 @@ def main(args):
         new_model = CustomCLIPModel(model, embed_dim).to(device)
         clip.model.convert_weights(new_model)
 
-        # for param in model.parameters():
-        #     param.requires_grad = False
-
-        # model.text_projection.requires_grad = True
-        # model.visual.proj.requires_grad = True   
+        for param in model.parameters():
+            param.requires_grad = False
 
         trainable_params = [p for p in new_model.parameters() if p.requires_grad] 
 

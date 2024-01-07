@@ -202,7 +202,7 @@ def main(args):
                 cosine_similarity = F.cosine_similarity(image_encodings[:, None, :], text_encodings[None, :, :], dim=2)
                 target = torch.eye(cosine_similarity.shape[0],dtype=torch.long, device=device)
                 loss = 0.5 * target * (1 - cosine_similarity) + 0.5 * (1 - target) * torch.clamp(cosine_similarity - 0.1, min=0.0)
-                loss = torch.sum(loss)
+                loss = torch.mean(loss)
 
             if args.loss == "cross_entropy":
                 temperature = 0.07

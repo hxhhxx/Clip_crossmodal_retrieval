@@ -152,7 +152,8 @@ def main(args):
 
         for param in model.parameters():
             param.requires_grad = False
-            
+        
+        model.logit_scale.requires_grad = True 
         model.text_projection.requires_grad = True
         model.visual.proj.requires_grad = True
 
@@ -204,18 +205,19 @@ def main(args):
             texts = texts.to(device)
 
             #encoding & cosine similarity as logits       
-            #logits_per_image, logits_per_text = model(images, texts)
+            #
 
             #encoding & cosine similarity as logits 
 
             if args.trainable == "new_layer":
                 image_encodings, text_encodings = new_model(images, texts)
-            else :                 
-                image_encodings = model.encode_image(images)
-                text_encodings = model.encode_text(texts)
+            else :  
+                logits_per_image, logits_per_text = model(images, texts)               
+            #     image_encodings = model.encode_image(images)
+            #     text_encodings = model.encode_text(texts)
 
-            image_encodings = image_encodings / image_encodings.norm(dim=1, keepdim=True)
-            text_encodings = text_encodings / text_encodings.norm(dim=1, keepdim=True)
+            # image_encodings = image_encodings / image_encodings.norm(dim=1, keepdim=True)
+            # text_encodings = text_encodings / text_encodings.norm(dim=1, keepdim=True)
 
             if args.loss == "cos_embedd":
                 cosine_similarity = F.cosine_similarity(image_encodings[:, None, :], text_encodings[None, :, :], dim=2)
@@ -224,9 +226,9 @@ def main(args):
                 loss = torch.mean(loss)
 
             if args.loss == "cross_entropy":
-                temperature = 0.07
-                logits_per_image = (image_encodings @ text_encodings.t()) / temperature
-                logits_per_text = logits_per_image.T
+                # temperature = 0.07
+                # logits_per_image = (image_encodings @ text_encodings.t()) / temperature
+                # logits_per_text = logits_per_image.T
                 targets = torch.arange(len(images),dtype=torch.long, device=device)
 
                 CE_loss = nn.CrossEntropyLoss()

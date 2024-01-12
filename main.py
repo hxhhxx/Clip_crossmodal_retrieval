@@ -96,6 +96,27 @@ class CustomCLIPModel(nn.Module):
 
         #text_features = self.additional_layers(text_features)
         return logits_per_image, logits_per_text
+    
+    def encode_image(self, image):
+        # Get features from CLIP
+        image_features = self.clip_model.encode_image(image)
+
+        # normalized features
+        image_features = image_features / image_features.norm(dim=1, keepdim=True)
+
+        # Pass features through additional layers
+        x = self.additional_layers(image_features)
+        ratio = 0.2
+        image_features = ratio * x + (1 - ratio) * image_features
+        return image_features
+    
+    def encode_text(self, text):
+        text_features = self.clip_model.encode_text(text)
+
+        # normalized features
+        text_features = text_features / text_features.norm(dim=1, keepdim=True)
+
+        return text_features
 
 
 def main(args):

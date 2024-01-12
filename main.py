@@ -73,18 +73,29 @@ class CustomCLIPModel(nn.Module):
         self.clip_model = clip_model
         #self.additional_layers = ProjectionHead(embed_dim)
         self.additional_layers = Adapter(embed_dim,4)
+        self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
         
     def forward(self, image, text):
         # Get features from CLIP
-        image_features, text_features = self.clip_model(image, text)               
+        image_features = self.clip_model.encode_image(image)
+        text_features = self.clip_model.encode_text(text)
+
+        # normalized features
+        image_features = image_features / image_features.norm(dim=1, keepdim=True)
+        text_features = text_features / text_features.norm(dim=1, keepdim=True)
 
         # Pass features through additional layers
         x = self.additional_layers(image_features)
         ratio = 0.2
         image_features = ratio * x + (1 - ratio) * image_features
+        
+        #similarity
+        logit_scale = self.logit_scale.exp()
+        logits_per_image = logit_scale * image_features @ text_features.t()
+        logits_per_text = logits_per_image.t()
 
         #text_features = self.additional_layers(text_features)
-        return image_features, text_features
+        return logits_per_image, logits_per_text
 
 
 def main(args):
@@ -122,8 +133,6 @@ def main(args):
 
         for param in model.parameters():
             param.requires_grad = False
-        if args.loss == "cross_entropy":
-            model.visual.proj.requires_grad = True
 
         trainable_params = [p for p in new_model.parameters() if p.requires_grad] 
 
@@ -189,7 +198,7 @@ def main(args):
             #encoding & cosine similarity as logits 
 
             if args.trainable == "adaptor":
-                image_encodings, text_encodings = new_model(images, texts)
+                logits_per_image, logits_per_image = new_model(images, texts)
             else :  
                 logits_per_image, logits_per_text = model(images, texts)               
             #     image_encodings = model.encode_image(images)

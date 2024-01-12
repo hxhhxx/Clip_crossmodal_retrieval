@@ -19,7 +19,7 @@ def split_dataset(args, preprocess, target_transform):
         dataset_len = len(Dataset)
         #print(len(flickr_Dataset))
         #31783
-        train_size, val_size, test_size= dataset_len-2000, 1000, 1000
+        train_size, val_size, test_size= (dataset_len)*0.94, (dataset_len)*0.03, (dataset_len)*0.03
 
         train_dataset, val_dataset, test_dataset = random_split(Dataset, [train_size, val_size, test_size])
     
@@ -53,23 +53,6 @@ def convert_models_to_fp32(model):
 
 
 # Added layer
-class ProjectionHead(nn.Module):
-    def __init__(
-        self,
-        embed_dim
-    ):
-        super().__init__()
-        self.linear = nn.Linear(embed_dim, 512)
-        # self.gelu = nn.GELU()
-        # self.dropout = nn.Dropout(0.1)
-        # self.fc = nn.Linear(512, 512)
-    
-    def forward(self, x):
-        x = self.linear(x)
-        # x = self.gelu(x)
-        # x = self.dropout(x)
-        # x = self.fc(x)
-        return x
 
 class Adapter(nn.Module):
     def __init__(self, embed_dim, reduction=4):
@@ -94,8 +77,7 @@ class CustomCLIPModel(nn.Module):
         
     def forward(self, image, text):
         # Get features from CLIP
-        image_features = self.clip_model.encode_image(image)
-        text_features = self.clip_model.encode_text(text)
+        image_features, text_features = self.clip_model(image, text)               
 
         # Pass features through additional layers
         x = self.additional_layers(image_features)
@@ -130,21 +112,19 @@ def main(args):
     ####################################
     #change the projection head inside the model
 
-    if args.trainable == "new_layer":
+    if args.trainable == "adaptor":
 
         # Create custom model
         state_dict = model.state_dict()
         embed_dim = state_dict["text_projection"].shape[1]
-        # transformer_width = state_dict["ln_final.weight"].shape[0]
-        # vision_width = state_dict["visual.conv1.weight"].shape[0]
-        # print(vision_width) #image_vit_output
-        # print(transformer_width) #text_tran_output
         # print(embed_dim) #512 in b/32 768 in l/14
         new_model = CustomCLIPModel(model, embed_dim).to(device)
         clip.model.convert_weights(new_model)
 
         for param in model.parameters():
             param.requires_grad = False
+        if args.loss == "cross_entropy":
+            model.visual.proj.requires_grad = True
 
         trainable_params = [p for p in new_model.parameters() if p.requires_grad] 
 
@@ -188,7 +168,7 @@ def main(args):
 
         total_loss = 0
 
-        if args.trainable == "new_layer":
+        if args.trainable == "adaptor":
             new_model.train()
         else :
             model.train()
@@ -209,7 +189,7 @@ def main(args):
 
             #encoding & cosine similarity as logits 
 
-            if args.trainable == "new_layer":
+            if args.trainable == "adaptor":
                 image_encodings, text_encodings = new_model(images, texts)
             else :  
                 logits_per_image, logits_per_text = model(images, texts)               
@@ -242,7 +222,7 @@ def main(args):
 
             #optimizer.step()
 
-            if args.trainable == "new_layer":
+            if args.trainable == "adaptor":
                 convert_models_to_fp32(new_model)
                 optimizer.step()            
                 clip.model.convert_weights(new_model)
@@ -270,7 +250,7 @@ def main(args):
             #logits_per_image, logits_per_text = model(images, texts)
 
             #encoding & cosine similarity as logits 
-            if args.trainable == "new_layer":
+            if args.trainable == "adaptor":
                 image_encodings, text_encodings = new_model(images, texts)
             else :                 
                 image_encodings = model.encode_image(images)
@@ -302,7 +282,7 @@ def main(args):
                 lr_scheduler.step()
 
         print("start to print the matrix of val for this epoch")
-        if args.trainable == "new_layer":
+        if args.trainable == "adaptor":
             Evaluation.metrics_at_k(new_model, val_loader, k_vals= k_vals, batch_size=16)
         else:
             Evaluation.metrics_at_k(model, val_loader, k_vals= k_vals, batch_size=16)
@@ -314,7 +294,7 @@ def main(args):
 
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            if args.trainable == "new_layer":
+            if args.trainable == "adaptor":
                 best_model = new_model.state_dict()
             else:
                 best_model = model.state_dict()
@@ -324,7 +304,7 @@ def main(args):
     print("save the best model")
 
     model, _ = clip.load(args.model, device=device)
-    if args.trainable == "new_layer":
+    if args.trainable == "adaptor":
         # Create custom model
         state_dict = model.state_dict()
         embed_dim = state_dict["text_projection"].shape[1]
@@ -337,7 +317,7 @@ def main(args):
     else:    
         model.load_state_dict(torch.load('/kaggle/working/best_model.pth'))
     print("start to test:")
-    if args.trainable == "new_layer":
+    if args.trainable == "adaptor":
         Evaluation.metrics_at_k(new_model, test_loader, k_vals= k_vals, batch_size=16)
     else :
         Evaluation.metrics_at_k(model, test_loader, k_vals= k_vals, batch_size=16)

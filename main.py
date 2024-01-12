@@ -198,7 +198,7 @@ def main(args):
             #encoding & cosine similarity as logits 
 
             if args.trainable == "adaptor":
-                logits_per_image, logits_per_image = new_model(images, texts)
+                logits_per_image, logits_per_text = new_model(images, texts)
             else :  
                 logits_per_image, logits_per_text = model(images, texts)               
             #     image_encodings = model.encode_image(images)

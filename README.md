@@ -8,33 +8,16 @@ OpenAI’s CLIP (Contrastive Language–Image Pre-training) a Vision-and-Languag
 
 The loss function of CLIP is based on the average similarity of image-to-text (img2text) and text-to-image (text2img) which is computed below:
 
-The similarity between two embeddings \( z_i \) and \( z_j \) is defined as:
+![示例图片](./_img/nt-xent_loss.png)
 
-\[
-sim(z_i, z_j) = \frac{z_i^T z_j}{\|z_i\| \|z_j\|}
-\]
+However, we introduce a modification by applying normalized temperature scaling to the similarity measurements. The temperature(τ) is set to 0.07 as initial value, an empirical value also utilized in CLIP pretraining. Crucially, we have made this temperature parameter trainable, find the most suitable temperature in the batch. Temperature adjustment sharpens the probability distribution, thereby focusing more precisely on the most probable pair.
 
-The CLIP contrastive loss function is defined as:
+Here, we employ a similarity contrastive loss function that directly drives the similarity of correct image-text pairs closer to 1.
 
-\[
-L_{i,j} = -\log \left( \frac{\exp\left( \frac{sim(z_i, z_j)}{\tau} \right)}{\sum_{k=1}^{2N} 1_{[k \neq i]} \exp\left( \frac{sim(z_i, z_k)}{\tau} \right)} \right)
-\]
+![示例图片](./_img/sim_contra_loss.png)
 
-Here, we employ a similarity pair wise contrastive loss function that directly drives the similarity of correct image-text pairs closer to 1. The function is defined as:
-
-\[
-L_{i,j} =
-\begin{cases}
-\frac{1}{2} (1 - sim(z_i, z_j)) & \text{if } y = 1 \\
-\frac{1}{2} \max(0, sim(z_i, z_j) - m) & \text{if } y = 0
-\end{cases}
-\]
-
-where:
-
-- \( y = 1 \) indicates a positive pair,
-- \( y = 0 \) indicates a negative pair,
-- \( m \) is a margin parameter.
+This modified version departs from the traditional use of Euclidean distance. Instead, we have adopted cosine similarity as the metric for comparison, which has demonstrated a superior fit for our specific task.
+Additionally, this approach is less constrained by batch size and computational resources, making it more efficient and adaptable in various scenarios. This inherent design feature enhances the model’s capability to perform retrieval tasks effectively, aligning closely with the needs of information retrieval in diverse contexts
 
 This modification is more suitable for **smaller batch sizes** and is no longer affected by **temperature** parameters or **resource** constraints.
 
@@ -44,9 +27,8 @@ This modification is more suitable for **smaller batch sizes** and is no longer 
 |-----------------|-------------------|
 | GPU             | NVIDIA Tesla P100 |
 | Batch Size      | 32                |
-                Fig.1
 
-Meanwhile, we freeze and store the other parameters of the model, training only the final layer, achieving high accuracy with rapid speed and limited resources(hardware shown on Fig.1).
+Meanwhile, we freeze and store the other parameters of the model, training only the final layer, achieving high accuracy with rapid speed and limited resources.
 
 And here is the result:
 ![示例图片](./_img/result.png)
@@ -56,5 +38,5 @@ To use the code straightly, try:
 !pip install git+https://github.com/openai/CLIP.git
 !git clone https://github.com/hxhhxx/Clip_crossmodal_retrieval.git
 !pip install pycocotools
-!python /kaggle/working/Clip_crossmodal_retrieval/main.py --batch_size "256" --trainable "adaptor"   --dataset "coco" --num_epoch "1" --model "ViT-L/14" # finetune defaultly, if just eval change the para
+!python /kaggle/working/Clip_crossmodal_retrieval/main.py --batch_size "256" --trainable "adaptor"   --dataset "coco" --num_epoch "1" --model "ViT-L/14" # finetune defaultly, if just eval change the
 ```

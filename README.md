@@ -6,13 +6,13 @@ OpenAI’s CLIP (Contrastive Language–Image Pre-training) a Vision-and-Languag
 
 # The Main Idea
 
-The loss function of CLIP is based on the average similarity of image-to-text (img2text) and text-to-image (text2img) which is computed below:
+The loss function of CLIP is based on the average similarity of image-to-text (img2text) and text-to-image (text2img) which is computed below (NT-Xent in result):
 
 ![示例图片](./_img/nt-xent_loss.png)
 
 However, we introduce a modification by applying normalized temperature scaling to the similarity measurements. The temperature(τ) is set to 0.07 as initial value, an empirical value also utilized in CLIP pretraining. Crucially, we have made this temperature parameter trainable, find the most suitable temperature in the batch. Temperature adjustment sharpens the probability distribution, thereby focusing more precisely on the most probable pair.
 
-Here, we employ a similarity contrastive loss function that directly drives the similarity of correct image-text pairs closer to 1.
+Here, we employ a similarity contrastive loss function (CosineEmbeddingLoss in result) that directly drives the similarity of correct image-text pairs closer to 1.
 
 ![示例图片](./_img/sim_contra_loss.png)
 

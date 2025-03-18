@@ -30,8 +30,12 @@ This modification is more suitable for **smaller batch sizes** and is no longer 
 
 Meanwhile, we freeze and store the other parameters of the model, training only the final layer, achieving high accuracy with rapid speed and limited resources.
 
-And here is the result:
+## Results
+
+And here is the result, no further elaboration:
 ![示例图片](./_img/result.png)
+
+## Usage
 
 To use the code straightly, try:
 ```python
